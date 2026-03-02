@@ -1,0 +1,306 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#define APSTUDIO_HIDDEN_SYMBOLS
+#include "windows.h"
+#undef APSTUDIO_HIDDEN_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Russian resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_RUS)
+#ifdef _WIN32
+LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
+#pragma code_page(1251)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""windows.h""\r\n"
+    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // Russian resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_EDITOR              ICON                    "Editor.ico"
+IDI_SMALL               ICON                    "small.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDC_TEST01 MENU 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "New",                         ID_FILE_NEW
+        MENUITEM "Open...",                     ID_FILE_OPEN
+        MENUITEM "Recent...",                   ID_FILE_RECENT
+        MENUITEM "Insert...",                   ID_FILE_INSERT
+        MENUITEM "Save",                        ID_FILE_SAVE
+        MENUITEM "Save As...",                  ID_FILE_SAVEAS
+        MENUITEM SEPARATOR
+        MENUITEM "Print...",                    ID_FILE_PRINT
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       IDM_EXIT
+    END
+    POPUP "Edit"
+    BEGIN
+        MENUITEM "Undo",                        ID_EDIT_UNDO
+        MENUITEM "Redo",                        ID_EDIT_REDO
+        MENUITEM SEPARATOR
+        MENUITEM "Cut",                         ID_EDIT_CUT
+        MENUITEM "Copy",                        ID_EDIT_COPY
+        MENUITEM "Paste",                       ID_EDIT_PASTE
+    END
+    POPUP "View"
+    BEGIN
+        MENUITEM "Zoom Extents",                ID_VIEW_ZOOMEXT
+        MENUITEM "Zoom Window",                 ID_VIEW_ZOOMWIN
+        MENUITEM "Zoom Previous",               ID_VIEW_ZOOMPREV
+        MENUITEM "Zoom Selected Objects",       ID_VIEW_ZOOMSEL
+        MENUITEM SEPARATOR
+        MENUITEM "Limits...",                   ID_VIEW_LIMITS
+        MENUITEM SEPARATOR
+        POPUP "3D Views..."
+        BEGIN
+            MENUITEM "Top (Plan View)",             ID_3DVIEWS_TOP
+            MENUITEM "Bottom",                      ID_3DVIEWS_BOTTOM
+            MENUITEM "Left",                        ID_3DVIEWS_LEFT
+            MENUITEM "Right",                       ID_3DVIEWS_RIGHT
+            MENUITEM "Front",                       ID_3DVIEWS_FRONT
+            MENUITEM "Back",                        ID_3DVIEWS_BACK
+            MENUITEM SEPARATOR
+            MENUITEM "SW isometric",                ID_3DVIEWS_SW
+            MENUITEM "SE isometric",                ID_3DVIEWS_SE
+            MENUITEM "NE isometric",                ID_3DVIEWS_NE
+            MENUITEM "NW isometric",                ID_3DVIEWS_NW
+            MENUITEM SEPARATOR
+            MENUITEM "Viewpoint Presets...",        ID_3DVIEWS_VPSET
+        END
+    END
+    POPUP "Format"
+    BEGIN
+        MENUITEM "Layers...",                   ID_FORMAT_LAYERS
+        MENUITEM "Colors...",                   ID_FORMAT_COLORS
+        MENUITEM "Linetypes...",                ID_FORMAT_LINETYPES
+        MENUITEM "Lineweights...",              ID_FORMAT_LINEWEIGHTS
+        MENUITEM SEPARATOR
+        MENUITEM "Text Styles...",              ID_FORMAT_TEXTSTYLES
+        MENUITEM "Point Styles...",             ID_FORMAT_POINTSTYLES
+        MENUITEM SEPARATOR
+        MENUITEM "Blocks...",                   ID_FORMAT_BLOCKS
+        MENUITEM "Create Block...",             ID_FORMAT_CREATEBLOCK
+        MENUITEM "Layouts...",                  ID_FORMAT_LAYOUTS
+        MENUITEM SEPARATOR
+        MENUITEM "Images...",                   ID_FORMAT_IMAGES
+        MENUITEM "Acquire Image...",            ID_FORMAT_ACQUIREIMAGE
+    END
+    POPUP "Draw"
+    BEGIN
+        MENUITEM "Line",                        ID_DRAW_LINE
+        MENUITEM "Ray",                         ID_DRAW_RAY
+        MENUITEM "Construction line",           ID_DRAW_XLINE
+        MENUITEM SEPARATOR
+        MENUITEM "Polyline",                    ID_DRAW_POLYLINE
+        MENUITEM "Rectangle",                   ID_DRAW_RECTANGLE
+        MENUITEM SEPARATOR
+        POPUP "Arc"
+        BEGIN
+            MENUITEM "3 points",                    ID_ARC_3P
+            MENUITEM SEPARATOR
+            MENUITEM "Start, Center, End",          ID_ARC_SCE
+            MENUITEM "Start, Center, Angle",        ID_ARC_SCA
+            MENUITEM "Start, Center, Length",       ID_ARC_SCL
+            MENUITEM SEPARATOR
+            MENUITEM "Start, End, Angle",           ID_ARC_SEA
+            MENUITEM "Start, End, Direction",       ID_ARC_SED
+            MENUITEM "Start, End, Radius",          ID_ARC_SER
+            MENUITEM SEPARATOR
+            MENUITEM "Center, Start, End",          ID_ARC_CSE
+            MENUITEM "Center, Start, Angle",        ID_ARC_CSA
+            MENUITEM "Center, Start, Length",       ID_ARC_CSL
+            MENUITEM SEPARATOR
+            MENUITEM "Continue",                    ID_ARC_CONTINUE
+        END
+        POPUP "Circle"
+        BEGIN
+            MENUITEM "Center, Radius",              ID_CIRCLE_CR
+            MENUITEM "Center, Diameter",            ID_CIRCLE_CD
+            MENUITEM "2 Points",                    ID_CIRCLE_2P
+            MENUITEM "3 Points",                    ID_CIRCLE_3P
+        END
+        MENUITEM "Ellipse",                     ID_DRAW_ELLIPSE
+        MENUITEM SEPARATOR
+        MENUITEM "Point",                       ID_DRAW_POINT
+        MENUITEM "Text",                        ID_DRAW_TEXT
+        MENUITEM "Raster Image...",             ID_DRAW_IMAGE
+        MENUITEM SEPARATOR
+        MENUITEM "Create Block...",             ID_DRAW_CREBLOCK
+        MENUITEM "Insert Block...",             ID_DRAW_INSBLOCK
+        MENUITEM SEPARATOR
+        MENUITEM "Boundary",                    ID_DRAW_BOUNDARY
+    END
+    POPUP "Modify"
+    BEGIN
+        MENUITEM "Erase",                       ID_MODIFY_ERASE
+        MENUITEM "Copy",                        ID_MODIFY_COPY
+        MENUITEM SEPARATOR
+        MENUITEM "Move",                        ID_MODIFY_MOVE
+        MENUITEM "Rotate",                      ID_MODIFY_ROTATE
+        MENUITEM "Scale",                       ID_MODIFY_SCALE
+        MENUITEM "Mirror",                      ID_MODIFY_MIRROR
+        MENUITEM SEPARATOR
+    END
+    POPUP "Tools"
+    BEGIN
+        MENUITEM "Distance",                    ID_TOOLS_DISTANCE
+        MENUITEM "Area",                        ID_TOOLS_AREA
+        MENUITEM "Area by inner point",         ID_TOOLS_AREAIP
+        MENUITEM SEPARATOR
+        POPUP "Selection"
+        BEGIN
+            MENUITEM "Selection Options...",        ID_SEL_OPTIONS
+            MENUITEM "Select by Filter...",         ID_SEL_FILTER
+            MENUITEM SEPARATOR
+            MENUITEM "Select All",                  ID_SEL_SELALL
+            MENUITEM "Unselect All",                ID_SEL_UNSELALL
+            MENUITEM SEPARATOR
+            MENUITEM "Current Layer",               ID_SEL_CLAYER
+        END
+        MENUITEM "Drafting Settings...",        ID_TOOLS_DSET
+        MENUITEM "Options...",                  ID_TOOLS_OPTIONS
+        MENUITEM SEPARATOR
+        MENUITEM "Make Raster...",              ID_TOOLS_MAKERASTER
+        MENUITEM "Plugins...",                  ID_TOOLS_PLUGINS
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About ...",                  IDM_ABOUT
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDC_TEST01 ACCELERATORS 
+BEGIN
+    "?",            IDM_ABOUT,              ASCII,  ALT
+    "/",            IDM_ABOUT,              ASCII,  ALT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOG  22, 17, 230, 75
+STYLE DS_SETFONT | DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
+CAPTION "About"
+FONT 8, "System"
+BEGIN
+    ICON            IDI_EDITOR,IDC_MYICON,14,9,16,16
+    LTEXT           "Test01 Version 1.0",IDC_STATIC,49,10,119,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 2008",IDC_STATIC,49,20,119,8
+    DEFPUSHBUTTON   "OK",IDOK,195,6,30,11,WS_GROUP
+END
+
+IDD_PROGRESS DIALOGEX 0, 0, 300, 76
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Cancel",IDCANCEL,120,55,60,14
+    CONTROL         "",PB_PROGR_BAR,"msctls_progress32",WS_BORDER,10,32,280,14
+    CTEXT           "Static",TEXT_PROGR_TEXT,10,6,280,8
+    CTEXT           "Static",TEXT_PROGR_PERCENT,130,18,40,8
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Cursor
+//
+
+CUR_DIVHORZ             CURSOR                  "DivHorz.cur"
+CUR_DIVVERT             CURSOR                  "DivVert.cur"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDS_APP_TITLE           "Test01"
+    IDC_TEST01              "TEST01"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
