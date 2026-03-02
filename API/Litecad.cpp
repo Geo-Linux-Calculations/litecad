@@ -1,337 +1,4861 @@
 /********************************************************************
-* LiteCAD DLL version 2.0
-* Copyright (c) 2009-2011, Oleg Kolbaskin.
+* LiteCAD DLL version 3.0
+* Copyright (C) 2009-2024, Oleg Kolbaskin.
 * All rights reserved.
 *
-* This file must be included in C project
-* that uses library Litecad.dll
 * This file makes dynamic linking with LiteCAD functions.
 *
-* Visual C++ applications can not include this file,
-* but use litecad.lib file instead
+* Visual C++ applications can use litecad.lib instead of this file.
+*
 ********************************************************************/
-
 #include <windows.h>
 
 #include "Litecad.h"
 
+typedef void (LCAPI *tflcEventSetProc)(int EventType, F_LCEVENT pFunc, int Prm1, HANDLE Prm2);
+tflcEventSetProc pflcEventSetProc = 0;
+
+typedef void (LCAPI *tflcEventReturnCode)(int code);
+tflcEventReturnCode pflcEventReturnCode = 0;
+
+typedef BOOL (LCAPI *tflcEventsEnable)(BOOL b);
+tflcEventsEnable pflcEventsEnable = 0;
+
+typedef BOOL (LCAPI *tflcInitialize)();
+tflcInitialize pflcInitialize = 0;
+
+typedef BOOL (LCAPI *tflcUninitialize)(BOOL bSaveConfig);
+tflcUninitialize pflcUninitialize = 0;
+
+typedef BOOL (LCAPI *tflcStrAdd)(LPCWSTR szTag, LPCWSTR szText);
+tflcStrAdd pflcStrAdd = 0;
+
+typedef BOOL (LCAPI *tflcStrSet)(LPCWSTR szTag, LPCWSTR szText);
+tflcStrSet pflcStrSet = 0;
+
+typedef LPCWSTR (LCAPI *tflcStrGet)(LPCWSTR szTag);
+tflcStrGet pflcStrGet = 0;
+
+typedef BOOL (LCAPI *tflcStrFileLoad)(LPCWSTR szFileName);
+tflcStrFileLoad pflcStrFileLoad = 0;
+
+typedef BOOL (LCAPI *tflcStrFileSave)(LPCWSTR szFileName, LPCWSTR szLanguage);
+tflcStrFileSave pflcStrFileSave = 0;
+
+typedef BOOL (LCAPI *tflcPropGetBool)(HANDLE hObject, int idProp);
+tflcPropGetBool pflcPropGetBool = 0;
+
+typedef int (LCAPI *tflcPropGetInt)(HANDLE hObject, int idProp);
+tflcPropGetInt pflcPropGetInt = 0;
+
+typedef double (LCAPI *tflcPropGetFloat)(HANDLE hObject, int idProp);
+tflcPropGetFloat pflcPropGetFloat = 0;
+
+typedef LPCWSTR (LCAPI *tflcPropGetStr)(HANDLE hObject, int idProp);
+tflcPropGetStr pflcPropGetStr = 0;
+
+typedef int (LCAPI *tflcPropGetStrA)(HANDLE hObject, int idProp, char* szBuf, int BufSize);
+tflcPropGetStrA pflcPropGetStrA = 0;
+
+typedef int (LCAPI *tflcPropGetStr2)(HANDLE hObject, int idProp);
+tflcPropGetStr2 pflcPropGetStr2 = 0;
+
+typedef int (LCAPI *tflcPropGetChar)(int iChar);
+tflcPropGetChar pflcPropGetChar = 0;
+
+typedef HANDLE (LCAPI *tflcPropGetHandle)(HANDLE hObject, int idProp);
+tflcPropGetHandle pflcPropGetHandle = 0;
+
+typedef BOOL (LCAPI *tflcPropPutBool)(HANDLE hObject, int idProp, BOOL bValue);
+tflcPropPutBool pflcPropPutBool = 0;
+
+typedef BOOL (LCAPI *tflcPropPutInt)(HANDLE hObject, int idProp, int Value);
+tflcPropPutInt pflcPropPutInt = 0;
+
+typedef BOOL (LCAPI *tflcPropPutFloat)(HANDLE hObject, int idProp, double Value);
+tflcPropPutFloat pflcPropPutFloat = 0;
+
+typedef BOOL (LCAPI *tflcPropPutStr)(HANDLE hObject, int idProp, LPCWSTR szValue);
+tflcPropPutStr pflcPropPutStr = 0;
+
+typedef BOOL (LCAPI *tflcPropPutHandle)(HANDLE hObject, int idProp, HANDLE hValue);
+tflcPropPutHandle pflcPropPutHandle = 0;
+
+typedef HANDLE (LCAPI *tflcCreateWindow)(HWND hWndParent, int Style);
+tflcCreateWindow pflcCreateWindow = 0;
+
+typedef BOOL (LCAPI *tflcDeleteWindow)(HANDLE hLcWnd);
+tflcDeleteWindow pflcDeleteWindow = 0;
+
+typedef BOOL (LCAPI *tflcWndOnClose)(HANDLE hLcWnd);
+tflcWndOnClose pflcWndOnClose = 0;
+
+typedef BOOL (LCAPI *tflcWndExeCommand)(HANDLE hLcWnd, int Command, int CmdParam);
+tflcWndExeCommand pflcWndExeCommand = 0;
+
+typedef BOOL (LCAPI *tflcWndExitCommand)(HANDLE hLcWnd);
+tflcWndExitCommand pflcWndExitCommand = 0;
+
+typedef BOOL (LCAPI *tflcWndResize)(HANDLE hLcWnd, int Left, int Top, int Width, int Height);
+tflcWndResize pflcWndResize = 0;
+
+typedef BOOL (LCAPI *tflcWndRedraw)(HANDLE hLcWnd);
+tflcWndRedraw pflcWndRedraw = 0;
+
+typedef BOOL (LCAPI *tflcWndRedrawAuto)(HANDLE hLcWnd, int Elapse, F_REDRAW pFunc);
+tflcWndRedrawAuto pflcWndRedrawAuto = 0;
+
+typedef BOOL (LCAPI *tflcWndSetFocus)(HANDLE hLcWnd);
+tflcWndSetFocus pflcWndSetFocus = 0;
+
+typedef BOOL (LCAPI *tflcWndSetExtents)(HANDLE hLcWnd, double Xmin, double Ymin, double Xmax, double Ymax);
+tflcWndSetExtents pflcWndSetExtents = 0;
+
+typedef BOOL (LCAPI *tflcWndSetBlock)(HANDLE hLcWnd, HANDLE hBlock);
+tflcWndSetBlock pflcWndSetBlock = 0;
+
+typedef BOOL (LCAPI *tflcWndSetProps)(HANDLE hLcWnd, HANDLE hPropWnd);
+tflcWndSetProps pflcWndSetProps = 0;
+
+typedef BOOL (LCAPI *tflcWndSetCmdwin)(HANDLE hLcWnd, HANDLE hCmdLine);
+tflcWndSetCmdwin pflcWndSetCmdwin = 0;
+
+typedef BOOL (LCAPI *tflcWndSetBasePoint)(HANDLE hLcWnd, BOOL bState, double X, double Y);
+tflcWndSetBasePoint pflcWndSetBasePoint = 0;
+
+typedef BOOL (LCAPI *tflcWndEmulator)(HANDLE hLcWnd, int Mode);
+tflcWndEmulator pflcWndEmulator = 0;
+
+typedef BOOL (LCAPI *tflcWndMagnifier)(HANDLE hLcWnd, BOOL bOn, int Width, int Height, int Zoom, int Flags);
+tflcWndMagnifier pflcWndMagnifier = 0;
+
+typedef BOOL (LCAPI *tflcWndHoverText)(HANDLE hLcWnd, LPCWSTR szText, int X, int Y, int Align);
+tflcWndHoverText pflcWndHoverText = 0;
+
+typedef int (LCAPI *tflcWndMessage)(HANDLE hLcWnd, LPCWSTR szText, int uType);
+tflcWndMessage pflcWndMessage = 0;
+
+typedef BOOL (LCAPI *tflcWndWaitPoint)(HANDLE hLcWnd, LPCWSTR szText, double* pXdrw, double* pYdrw);
+tflcWndWaitPoint pflcWndWaitPoint = 0;
+
+typedef BOOL (LCAPI *tflcWndWaitPoint2)(HANDLE hLcWnd, LPCWSTR szText, double* pXdrw, double* pYdrw, F_WAITPOINT pFunc, int FuncPrm);
+tflcWndWaitPoint2 pflcWndWaitPoint2 = 0;
+
+typedef BOOL (LCAPI *tflcWndInputStr)(HANDLE hLcWnd);
+tflcWndInputStr pflcWndInputStr = 0;
+
+typedef BOOL (LCAPI *tflcWndUpdate)(HANDLE hLcWnd, int Mode);
+tflcWndUpdate pflcWndUpdate = 0;
+
+typedef HANDLE (LCAPI *tflcWndDrwAdd)(HANDLE hLcWnd, LPCWSTR szFileName);
+tflcWndDrwAdd pflcWndDrwAdd = 0;
+
+typedef BOOL (LCAPI *tflcWndDrwDelete)(HANDLE hLcWnd, HANDLE hLcDrw);
+tflcWndDrwDelete pflcWndDrwDelete = 0;
+
+typedef HANDLE (LCAPI *tflcWndDrwGet)(HANDLE hLcWnd, int Index);
+tflcWndDrwGet pflcWndDrwGet = 0;
+
+typedef BOOL (LCAPI *tflcWndZoomRect)(HANDLE hLcWnd, double Left, double Bottom, double Right, double Top);
+tflcWndZoomRect pflcWndZoomRect = 0;
+
+typedef BOOL (LCAPI *tflcWndZoomScale)(HANDLE hLcWnd, double Scal);
+tflcWndZoomScale pflcWndZoomScale = 0;
+
+typedef BOOL (LCAPI *tflcWndZoomMove)(HANDLE hLcWnd, double DX, double DY);
+tflcWndZoomMove pflcWndZoomMove = 0;
+
+typedef BOOL (LCAPI *tflcWndZoomPos)(HANDLE hLcWnd, double Xc, double Yc, double PixSize);
+tflcWndZoomPos pflcWndZoomPos = 0;
+
+typedef BOOL (LCAPI *tflcWndZoomEnt)(HANDLE hLcWnd, HANDLE hEnt, double Scal);
+tflcWndZoomEnt pflcWndZoomEnt = 0;
+
+typedef BOOL (LCAPI *tflcWndGetCursorCoord)(HANDLE hLcWnd, int* pXwin, int* pYwin, double* pXdrw, double* pYdrw);
+tflcWndGetCursorCoord pflcWndGetCursorCoord = 0;
+
+typedef BOOL (LCAPI *tflcCoordDrwToWnd)(HANDLE hLcWnd, double Xdrw, double Ydrw, int* pXwnd, int* pYwnd);
+tflcCoordDrwToWnd pflcCoordDrwToWnd = 0;
+
+typedef BOOL (LCAPI *tflcCoordWndToDrw)(HANDLE hLcWnd, int Xwnd, int Ywnd, double* pXdrw, double* pYdrw);
+tflcCoordWndToDrw pflcCoordWndToDrw = 0;
+
+typedef BOOL (LCAPI *tflcWndCoordFromDrw)(HANDLE hLcWnd, double Xdrw, double Ydrw, int* pXwin, int* pYwin);
+tflcWndCoordFromDrw pflcWndCoordFromDrw = 0;
+
+typedef BOOL (LCAPI *tflcWndCoordToDrw)(HANDLE hLcWnd, int Xwin, int Ywin, double* pXdrw, double* pYdrw);
+tflcWndCoordToDrw pflcWndCoordToDrw = 0;
+
+typedef HANDLE (LCAPI *tflcWndGetEntByPoint)(HANDLE hLcWnd, int Xwin, int Ywin);
+tflcWndGetEntByPoint pflcWndGetEntByPoint = 0;
+
+typedef HANDLE (LCAPI *tflcWndGetEntByPoint2)(HANDLE hLcWnd, double X, double Y, double Delta);
+tflcWndGetEntByPoint2 pflcWndGetEntByPoint2 = 0;
+
+typedef int (LCAPI *tflcWndGetEntsByPoint)(HANDLE hLcWnd, int Xwin, int Ywin, int nMaxEnts);
+tflcWndGetEntsByPoint pflcWndGetEntsByPoint = 0;
+
+typedef int (LCAPI *tflcWndGetEntsByRect)(HANDLE hLcWnd, double Lef, double Bot, double Rig, double Top, BOOL bCross, int nMaxEnts);
+tflcWndGetEntsByRect pflcWndGetEntsByRect = 0;
+
+typedef HANDLE (LCAPI *tflcWndGetEntity)(int iEnt);
+tflcWndGetEntity pflcWndGetEntity = 0;
+
+typedef HANDLE (LCAPI *tflcWndGetEntByID)(HANDLE hLcWnd, int Id);
+tflcWndGetEntByID pflcWndGetEntByID = 0;
+
+typedef HANDLE (LCAPI *tflcWndGetEntByIDH)(HANDLE hLcWnd, LPCWSTR szId);
+tflcWndGetEntByIDH pflcWndGetEntByIDH = 0;
+
+typedef HANDLE (LCAPI *tflcWndGetEntByKey)(HANDLE hLcWnd, int Key);
+tflcWndGetEntByKey pflcWndGetEntByKey = 0;
+
+typedef int (LCAPI *tflcWndPickEnt)(HANDLE hLcWnd, LPCWSTR szTitle, LPCWSTR szCursorText);
+tflcWndPickEnt pflcWndPickEnt = 0;
+
+typedef HANDLE (LCAPI *tflcFontGetFirst)();
+tflcFontGetFirst pflcFontGetFirst = 0;
+
+typedef HANDLE (LCAPI *tflcFontGetNext)(HANDLE hFont);
+tflcFontGetNext pflcFontGetNext = 0;
+
+typedef HANDLE (LCAPI *tflcFontAddRes)(LPCWSTR szFontName, HANDLE hModule, int idResource);
+tflcFontAddRes pflcFontAddRes = 0;
+
+typedef HANDLE (LCAPI *tflcFontAddFile)(LPCWSTR szFontName, LPCWSTR szFilename, WCHAR* szOutFontName);
+tflcFontAddFile pflcFontAddFile = 0;
+
+typedef HANDLE (LCAPI *tflcFontAddBin)(LPCWSTR szFontName, HANDLE hData);
+tflcFontAddBin pflcFontAddBin = 0;
+
+typedef HANDLE (LCAPI *tflcFontGetChar)(HANDLE hFont, int CharCode);
+tflcFontGetChar pflcFontGetChar = 0;
+
+typedef LPCWSTR (LCAPI *tflcFontGetName)(LPCWSTR szFilename);
+tflcFontGetName pflcFontGetName = 0;
+
+typedef BOOL (LCAPI *tflcProgressCreate)(HANDLE hLcWnd, int W, int H, LPCWSTR szTitle);
+tflcProgressCreate pflcProgressCreate = 0;
+
+typedef BOOL (LCAPI *tflcProgressSetText)(LPCWSTR szText);
+tflcProgressSetText pflcProgressSetText = 0;
+
+typedef BOOL (LCAPI *tflcProgressStart)(int MinVal, int MaxVal);
+tflcProgressStart pflcProgressStart = 0;
+
+typedef BOOL (LCAPI *tflcProgressSetPos)(int Val);
+tflcProgressSetPos pflcProgressSetPos = 0;
+
+typedef BOOL (LCAPI *tflcProgressInc)();
+tflcProgressInc pflcProgressInc = 0;
+
+typedef BOOL (LCAPI *tflcProgressDelete)();
+tflcProgressDelete pflcProgressDelete = 0;
+
+typedef HANDLE (LCAPI *tflcQuadCreate)();
+tflcQuadCreate pflcQuadCreate = 0;
+
+typedef BOOL (LCAPI *tflcQuadDelete)(HANDLE hQuad);
+tflcQuadDelete pflcQuadDelete = 0;
+
+typedef BOOL (LCAPI *tflcQuadSet)(HANDLE hQuad, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3);
+tflcQuadSet pflcQuadSet = 0;
+
+typedef BOOL (LCAPI *tflcQuadTransXYtoUV)(HANDLE hQuad, double X, double Y, double* pU, double* pV);
+tflcQuadTransXYtoUV pflcQuadTransXYtoUV = 0;
+
+typedef BOOL (LCAPI *tflcQuadTransUVtoXY)(HANDLE hQuad, double U, double V, double* pX, double* pY);
+tflcQuadTransUVtoXY pflcQuadTransUVtoXY = 0;
+
+typedef BOOL (LCAPI *tflcQuadContains)(HANDLE hQuad, double X, double Y);
+tflcQuadContains pflcQuadContains = 0;
+
+typedef HANDLE (LCAPI *tflcGridCreate)();
+tflcGridCreate pflcGridCreate = 0;
+
+typedef BOOL (LCAPI *tflcGridDelete)(HANDLE hGrid);
+tflcGridDelete pflcGridDelete = 0;
+
+typedef BOOL (LCAPI *tflcGridSet)(HANDLE hGrid, double X0, double Y0, double W, double H, int Nx, int Ny);
+tflcGridSet pflcGridSet = 0;
+
+typedef BOOL (LCAPI *tflcGridSetDest)(HANDLE hGrid, int Ix, int Iy, double X, double Y);
+tflcGridSetDest pflcGridSetDest = 0;
+
+typedef BOOL (LCAPI *tflcGridUpdate)(HANDLE hGrid);
+tflcGridUpdate pflcGridUpdate = 0;
+
+typedef BOOL (LCAPI *tflcGridTrans)(HANDLE hGrid, double X, double Y, double* pXdest, double* pYdest);
+tflcGridTrans pflcGridTrans = 0;
+
+typedef BOOL (LCAPI *tflcGridGetNode)(HANDLE hGrid, BOOL bDest, int Ix, int Iy, double* pX, double* pY);
+tflcGridGetNode pflcGridGetNode = 0;
+
+typedef BOOL (LCAPI *tflcGridGetCell)(HANDLE hGrid, double X, double Y, int* pIx, int* pIy);
+tflcGridGetCell pflcGridGetCell = 0;
+
+typedef BOOL (LCAPI *tflcGridSetView)(HANDLE hGrid, int Mode, HANDLE hLcWnd, COLORREF ColLine, COLORREF ColNode);
+tflcGridSetView pflcGridSetView = 0;
+
+typedef HANDLE (LCAPI *tflcCreateCmdwin)(HWND hWndParent, int Left, int Top, int Width, int Height);
+tflcCreateCmdwin pflcCreateCmdwin = 0;
+
+typedef BOOL (LCAPI *tflcCmdwinResize)(HANDLE hCmdLine, int Left, int Top, int Width, int Height);
+tflcCmdwinResize pflcCmdwinResize = 0;
+
+typedef BOOL (LCAPI *tflcCmdwinUpdate)(HANDLE hCmdLine);
+tflcCmdwinUpdate pflcCmdwinUpdate = 0;
+
+typedef HANDLE (LCAPI *tflcCreateProps)(HWND hWndParent, int Mode);
+tflcCreateProps pflcCreateProps = 0;
+
+typedef BOOL (LCAPI *tflcDeleteProps)(HANDLE hPropWnd);
+tflcDeleteProps pflcDeleteProps = 0;
+
+typedef BOOL (LCAPI *tflcPropsResize)(HANDLE hPropWnd, int Left, int Top, int Width, int Height);
+tflcPropsResize pflcPropsResize = 0;
+
+typedef BOOL (LCAPI *tflcPropsUpdate)(HANDLE hPropWnd, BOOL bSelChanged);
+tflcPropsUpdate pflcPropsUpdate = 0;
+
+typedef HANDLE (LCAPI *tflcCreateStatbar)(HWND hWndParent);
+tflcCreateStatbar pflcCreateStatbar = 0;
+
+typedef BOOL (LCAPI *tflcDeleteStatbar)(HANDLE hStatbar);
+tflcDeleteStatbar pflcDeleteStatbar = 0;
+
+typedef BOOL (LCAPI *tflcStatbarResize)(HANDLE hStatbar, int Left, int Top, int Width, int Height);
+tflcStatbarResize pflcStatbarResize = 0;
+
+typedef BOOL (LCAPI *tflcStatbarCell)(HANDLE hStatbar, int Id, int Pos);
+tflcStatbarCell pflcStatbarCell = 0;
+
+typedef BOOL (LCAPI *tflcStatbarText)(HANDLE hStatbar, int Id, LPCWSTR szText);
+tflcStatbarText pflcStatbarText = 0;
+
+typedef BOOL (LCAPI *tflcStatbarRedraw)(HANDLE hStatbar);
+tflcStatbarRedraw pflcStatbarRedraw = 0;
+
+typedef BOOL (LCAPI *tflcDgGetValue)(HANDLE hWnd, int Lef, int Top, LPCWSTR szTitle, LPCWSTR szPrompt);
+tflcDgGetValue pflcDgGetValue = 0;
+
+typedef BOOL (LCAPI *tflcHelp)(LPCWSTR szTopic);
+tflcHelp pflcHelp = 0;
+
+typedef void (LCAPI *tflcGetPolarPoint)(double x0, double y0, double Angle, double Dist, double* pOutX, double* pOutY);
+tflcGetPolarPoint pflcGetPolarPoint = 0;
+
+typedef void (LCAPI *tflcGetPolarPrm)(double x1, double y1, double x2, double y2, double* pAngle, double* pDist);
+tflcGetPolarPrm pflcGetPolarPrm = 0;
+
+typedef BOOL (LCAPI *tflcGetClientSize)(HWND hWnd, int* pWidth, int* pHeight);
+tflcGetClientSize pflcGetClientSize = 0;
+
+typedef int (LCAPI *tflcGetErrorCode)();
+tflcGetErrorCode pflcGetErrorCode = 0;
+
+typedef LPCWSTR (LCAPI *tflcGetErrorStr)();
+tflcGetErrorStr pflcGetErrorStr = 0;
+
+typedef BOOL (LCAPI *tflcGetStr)(int Mode);
+tflcGetStr pflcGetStr = 0;
+
+typedef BOOL (LCAPI *tflcGetDrwXData)(LPCWSTR szFileName);
+tflcGetDrwXData pflcGetDrwXData = 0;
+
+typedef int (LCAPI *tflcGetDrwPreview)(LPCWSTR szFileName, BYTE* pOutDIB);
+tflcGetDrwPreview pflcGetDrwPreview = 0;
+
+typedef BOOL (LCAPI *tflcFilletSetLines)(double L1x0, double L1y0, double L1x1, double L1y1, double L2x0, double L2y0, double L2x1, double L2y1);
+tflcFilletSetLines pflcFilletSetLines = 0;
+
+typedef BOOL (LCAPI *tflcFillet)(double Rad, double Bis, double Tang);
+tflcFillet pflcFillet = 0;
+
+typedef BOOL (LCAPI *tflcFilletGetPoint)(int iPnt, double* pX, double* pY);
+tflcFilletGetPoint pflcFilletGetPoint = 0;
+
+typedef int (LCAPI *tflcFileToStrA)(LPCWSTR szFileName, char* pBuf);
+tflcFileToStrA pflcFileToStrA = 0;
+
+typedef HANDLE (LCAPI *tflcCreateCommand)(HANDLE hLcWnd, int Id, LPCWSTR szTitle);
+tflcCreateCommand pflcCreateCommand = 0;
+
+typedef BOOL (LCAPI *tflcCmdExit)(HANDLE hCmd);
+tflcCmdExit pflcCmdExit = 0;
+
+typedef BOOL (LCAPI *tflcCmdCursorText)(HANDLE hCmd, LPCWSTR szText);
+tflcCmdCursorText pflcCmdCursorText = 0;
+
+typedef int (LCAPI *tflcCmdMessage)(HANDLE hCmd, LPCWSTR szText, int uType);
+tflcCmdMessage pflcCmdMessage = 0;
+
+typedef BOOL (LCAPI *tflcCmdResetLastPt)(HANDLE hCmd);
+tflcCmdResetLastPt pflcCmdResetLastPt = 0;
+
+typedef BOOL (LCAPI *tflcTIS_InitLibrary)(LPCWSTR szLicenseKey, BOOL bErrMsg);
+tflcTIS_InitLibrary pflcTIS_InitLibrary = 0;
+
+typedef BOOL (LCAPI *tflcTIS_CloseLibrary)();
+tflcTIS_CloseLibrary pflcTIS_CloseLibrary = 0;
+
+typedef BOOL (LCAPI *tflcCameraConnect)(LPCWSTR szName);
+tflcCameraConnect pflcCameraConnect = 0;
+
+typedef BOOL (LCAPI *tflcCameraDisconnect)();
+tflcCameraDisconnect pflcCameraDisconnect = 0;
+
+typedef BOOL (LCAPI *tflcCameraShot)();
+tflcCameraShot pflcCameraShot = 0;
+
+typedef HANDLE (LCAPI *tflcCreateDrawing)();
+tflcCreateDrawing pflcCreateDrawing = 0;
+
+typedef BOOL (LCAPI *tflcDeleteDrawing)(HANDLE hDrw);
+tflcDeleteDrawing pflcDeleteDrawing = 0;
+
+typedef BOOL (LCAPI *tflcDrwNew)(HANDLE hDrw, LPCWSTR szFileName, HANDLE hLcWnd);
+tflcDrwNew pflcDrwNew = 0;
+
+typedef BOOL (LCAPI *tflcDrwLoad)(HANDLE hDrw, LPCWSTR szFileName, HANDLE hLcWnd);
+tflcDrwLoad pflcDrwLoad = 0;
+
+typedef BOOL (LCAPI *tflcDrwLoadMem)(HANDLE hDrw, HANDLE hMem, HANDLE hLcWnd);
+tflcDrwLoadMem pflcDrwLoadMem = 0;
+
+typedef BOOL (LCAPI *tflcDxfLoadMem)(HANDLE hDrw, HANDLE hMem, HANDLE hLcWnd);
+tflcDxfLoadMem pflcDxfLoadMem = 0;
+
+typedef HANDLE (LCAPI *tflcDrwLoadTIN)(HANDLE hDrw, LPCWSTR szFileName, HANDLE hLcWnd);
+tflcDrwLoadTIN pflcDrwLoadTIN = 0;
+
+typedef BOOL (LCAPI *tflcDrwSaveTIN)(HANDLE hDrw, HANDLE hLcWnd);
+tflcDrwSaveTIN pflcDrwSaveTIN = 0;
+
+typedef BOOL (LCAPI *tflcDrwInsert)(HANDLE hDrw, LPCWSTR szFileName, int Overwrite, HANDLE hLcWnd);
+tflcDrwInsert pflcDrwInsert = 0;
+
+typedef BOOL (LCAPI *tflcDrwInsertSHP)(HANDLE hDrw, HANDLE hLayer, LPCWSTR szFileName, HANDLE hLcWnd);
+tflcDrwInsertSHP pflcDrwInsertSHP = 0;
+
+typedef BOOL (LCAPI *tflcDrwCopy)(HANDLE hDrw, HANDLE hDrwSrc);
+tflcDrwCopy pflcDrwCopy = 0;
+
+typedef BOOL (LCAPI *tflcDrwSave)(HANDLE hDrw, LPCWSTR szFileName, BOOL bBak, HANDLE hLcWnd);
+tflcDrwSave pflcDrwSave = 0;
+
+typedef int (LCAPI *tflcDrwSaveMem)(HANDLE hDrw, HANDLE hMem, int MemSize);
+tflcDrwSaveMem pflcDrwSaveMem = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddLayer)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szColor, HANDLE hLtype, int Lwidth);
+tflcDrwAddLayer pflcDrwAddLayer = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddLayer2)(HANDLE hDrw, LPCWSTR szName, HANDLE hFromLayer);
+tflcDrwAddLayer2 pflcDrwAddLayer2 = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddLinetype)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szDefinition);
+tflcDrwAddLinetype pflcDrwAddLinetype = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddLinetypeF)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, LPCWSTR szLtypeName);
+tflcDrwAddLinetypeF pflcDrwAddLinetypeF = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddTextStyle)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szFontName, BOOL bWinFont);
+tflcDrwAddTextStyle pflcDrwAddTextStyle = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddDimStyle)(HANDLE hDrw, LPCWSTR szName);
+tflcDrwAddDimStyle pflcDrwAddDimStyle = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddMlineStyle)(HANDLE hDrw, LPCWSTR szName);
+tflcDrwAddMlineStyle pflcDrwAddMlineStyle = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddPntStyle)(HANDLE hDrw, LPCWSTR szName, HANDLE hBlock, double BlockScale, HANDLE hTStyle, double TextHeight, double TextWidth);
+tflcDrwAddPntStyle pflcDrwAddPntStyle = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddFilling)(HANDLE hDrw, LPCWSTR szName);
+tflcDrwAddFilling pflcDrwAddFilling = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddImage)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName);
+tflcDrwAddImage pflcDrwAddImage = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddImage2)(HANDLE hDrw, LPCWSTR szName, int Width, int Height, int nBits, HANDLE hData, BOOL bTopDown);
+tflcDrwAddImage2 pflcDrwAddImage2 = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddImage3)(HANDLE hDrw, LPCWSTR szName, HANDLE hMem);
+tflcDrwAddImage3 pflcDrwAddImage3 = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddImageCam)(HANDLE hDrw, LPCWSTR szName);
+tflcDrwAddImageCam pflcDrwAddImageCam = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddBlock)(HANDLE hDrw, LPCWSTR szName, double X, double Y);
+tflcDrwAddBlock pflcDrwAddBlock = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddBlockFromFile)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, int Overwrite, HWND hwParent);
+tflcDrwAddBlockFromFile pflcDrwAddBlockFromFile = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddBlockFromDrw)(HANDLE hDrw, LPCWSTR szName, HANDLE hDrw2, int Overwrite, HWND hwParent);
+tflcDrwAddBlockFromDrw pflcDrwAddBlockFromDrw = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddBlockFile)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, int Overwrite, HWND hwParent);
+tflcDrwAddBlockFile pflcDrwAddBlockFile = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddBlockPaper)(HANDLE hDrw, LPCWSTR szName, int PaperSize, int Orient, double Width, double Height);
+tflcDrwAddBlockPaper pflcDrwAddBlockPaper = 0;
+
+typedef HANDLE (LCAPI *tflcDrwAddBlockCopy)(HANDLE hDrw, LPCWSTR szName, HANDLE hSrcBlock);
+tflcDrwAddBlockCopy pflcDrwAddBlockCopy = 0;
+
+typedef BOOL (LCAPI *tflcDrwDeleteObject)(HANDLE hDrw, HANDLE hObject);
+tflcDrwDeleteObject pflcDrwDeleteObject = 0;
+
+typedef int (LCAPI *tflcDrwDeleteUnused)(HANDLE hDrw, int ObjType);
+tflcDrwDeleteUnused pflcDrwDeleteUnused = 0;
+
+typedef int (LCAPI *tflcDrwCountObjects)(HANDLE hDrw, int ObjType);
+tflcDrwCountObjects pflcDrwCountObjects = 0;
+
+typedef BOOL (LCAPI *tflcDrwSortObjects)(HANDLE hDrw, int ObjType);
+tflcDrwSortObjects pflcDrwSortObjects = 0;
+
+typedef BOOL (LCAPI *tflcDrwUpdateWinFonts)(HANDLE hDrw, HANDLE hTStyle);
+tflcDrwUpdateWinFonts pflcDrwUpdateWinFonts = 0;
+
+typedef BOOL (LCAPI *tflcDrwUpdateBlkRefs)(HANDLE hDrw, HANDLE hBlock);
+tflcDrwUpdateBlkRefs pflcDrwUpdateBlkRefs = 0;
+
+typedef BOOL (LCAPI *tflcDrwUpdateTexts)(HANDLE hDrw, HANDLE hTStyle);
+tflcDrwUpdateTexts pflcDrwUpdateTexts = 0;
+
+typedef HANDLE (LCAPI *tflcDrwGetFirstObject)(HANDLE hDrw, int ObjType);
+tflcDrwGetFirstObject pflcDrwGetFirstObject = 0;
+
+typedef HANDLE (LCAPI *tflcDrwGetNextObject)(HANDLE hDrw, HANDLE hObject);
+tflcDrwGetNextObject pflcDrwGetNextObject = 0;
+
+typedef HANDLE (LCAPI *tflcDrwGetObjectByID)(HANDLE hDrw, int ObjType, int Id);
+tflcDrwGetObjectByID pflcDrwGetObjectByID = 0;
+
+typedef HANDLE (LCAPI *tflcDrwGetObjectByIDH)(HANDLE hDrw, int ObjType, LPCWSTR szId);
+tflcDrwGetObjectByIDH pflcDrwGetObjectByIDH = 0;
+
+typedef HANDLE (LCAPI *tflcDrwGetObjectByName)(HANDLE hDrw, int ObjType, LPCWSTR szName);
+tflcDrwGetObjectByName pflcDrwGetObjectByName = 0;
+
+typedef HANDLE (LCAPI *tflcDrwGetEntByID)(HANDLE hDrw, int Id);
+tflcDrwGetEntByID pflcDrwGetEntByID = 0;
+
+typedef HANDLE (LCAPI *tflcDrwGetEntByIDH)(HANDLE hDrw, LPCWSTR szId);
+tflcDrwGetEntByIDH pflcDrwGetEntByIDH = 0;
+
+typedef HANDLE (LCAPI *tflcDrwGetEntByKey)(HANDLE hDrw, int Key);
+tflcDrwGetEntByKey pflcDrwGetEntByKey = 0;
+
+typedef BOOL (LCAPI *tflcDrwClearXData)(HANDLE hDrw, int ObjType, int Mode);
+tflcDrwClearXData pflcDrwClearXData = 0;
+
+typedef BOOL (LCAPI *tflcDrwPurge)(HANDLE hDrw);
+tflcDrwPurge pflcDrwPurge = 0;
+
+typedef BOOL (LCAPI *tflcDrwExplode)(HANDLE hDrw, int Mode);
+tflcDrwExplode pflcDrwExplode = 0;
+
+typedef BOOL (LCAPI *tflcDrwSetLimits)(HANDLE hDrw, double Xmin, double Ymin, double Xmax, double Ymax);
+tflcDrwSetLimits pflcDrwSetLimits = 0;
+
+typedef BOOL (LCAPI *tflcDrwUndoRecord)(HANDLE hDrw, int Mode);
+tflcDrwUndoRecord pflcDrwUndoRecord = 0;
+
+typedef BOOL (LCAPI *tflcDrwUndo)(HANDLE hDrw, BOOL bRedo);
+tflcDrwUndo pflcDrwUndo = 0;
+
+typedef BOOL (LCAPI *tflcCRectsClear)(HANDLE hDrw);
+tflcCRectsClear pflcCRectsClear = 0;
+
+typedef BOOL (LCAPI *tflcCRectsAdd)(HANDLE hDrw, int ID, double Lef, double Bot, double Width, double Height);
+tflcCRectsAdd pflcCRectsAdd = 0;
+
+typedef int (LCAPI *tflcCRectsDivide)(HANDLE hDrw, int NumX, int NumY, BOOL bClearExist);
+tflcCRectsDivide pflcCRectsDivide = 0;
+
+typedef HANDLE (LCAPI *tflcCRectsGetFirst)(HANDLE hDrw);
+tflcCRectsGetFirst pflcCRectsGetFirst = 0;
+
+typedef HANDLE (LCAPI *tflcCRectsGetNext)(HANDLE hDrw, HANDLE hCRect);
+tflcCRectsGetNext pflcCRectsGetNext = 0;
+
+typedef HANDLE (LCAPI *tflcCRectsGetWithID)(HANDLE hDrw, int Id);
+tflcCRectsGetWithID pflcCRectsGetWithID = 0;
+
+typedef BOOL (LCAPI *tflcCRectsActive)(HANDLE hDrw, HANDLE hCRect);
+tflcCRectsActive pflcCRectsActive = 0;
+
+typedef HANDLE (LCAPI *tflcCRectsGetActive)(HANDLE hDrw);
+tflcCRectsGetActive pflcCRectsGetActive = 0;
+
+typedef BOOL (LCAPI *tflcCRectsDelete)(HANDLE hDrw, HANDLE hCRect);
+tflcCRectsDelete pflcCRectsDelete = 0;
+
+typedef BOOL (LCAPI *tflcCRectsSave)(HANDLE hDrw, HANDLE hCRect, LPCWSTR szFileName);
+tflcCRectsSave pflcCRectsSave = 0;
+
+typedef BOOL (LCAPI *tflcCRectsBitmap)(HANDLE hDrw, HANDLE hCRect, LPCWSTR szFileName, double PixelSize);
+tflcCRectsBitmap pflcCRectsBitmap = 0;
+
+typedef BOOL (LCAPI *tflcBlockSetViewRect)(HANDLE hBlock, double Xcen, double Ycen, double Width, double Height);
+tflcBlockSetViewRect pflcBlockSetViewRect = 0;
+
+typedef BOOL (LCAPI *tflcBlockSetViewRect2)(HANDLE hBlock, double Lef, double Bot, double Rig, double Top);
+tflcBlockSetViewRect2 pflcBlockSetViewRect2 = 0;
+
+typedef BOOL (LCAPI *tflcBlockSetPaperSize)(HANDLE hBlock, int PaperSize, int Orient, double Width, double Height);
+tflcBlockSetPaperSize pflcBlockSetPaperSize = 0;
+
+typedef BOOL (LCAPI *tflcBlockRasterize)(HANDLE hBlock, LPCWSTR szFileName, double Xmin, double Ymin, double Xmax, double Ymax, int ImgW, int ImgH);
+tflcBlockRasterize pflcBlockRasterize = 0;
+
+typedef int (LCAPI *tflcBlockRasterizeMem)(HANDLE hBlock, HANDLE hMem, double Xmin, double Ymin, double Xmax, double Ymax, int ImgW, int ImgH);
+tflcBlockRasterizeMem pflcBlockRasterizeMem = 0;
+
+typedef BOOL (LCAPI *tflcBlockUpdate)(HANDLE hBlock, BOOL bUpdEnts, HANDLE hNewEnt);
+tflcBlockUpdate pflcBlockUpdate = 0;
+
+typedef BOOL (LCAPI *tflcBlockMove)(HANDLE hBlock, double dX, double dY, BOOL bUpdate);
+tflcBlockMove pflcBlockMove = 0;
+
+typedef BOOL (LCAPI *tflcBlockScale)(HANDLE hBlock, double X, double Y, double Scal, BOOL bUpdate);
+tflcBlockScale pflcBlockScale = 0;
+
+typedef BOOL (LCAPI *tflcBlockRotate)(HANDLE hBlock, double X, double Y, double Angle, BOOL bUpdate);
+tflcBlockRotate pflcBlockRotate = 0;
+
+typedef BOOL (LCAPI *tflcBlockMirror)(HANDLE hBlock, double X1, double Y1, double X2, double Y2, BOOL bUpdate);
+tflcBlockMirror pflcBlockMirror = 0;
+
+typedef BOOL (LCAPI *tflcBlockClear)(HANDLE hBlock, HANDLE hLayer);
+tflcBlockClear pflcBlockClear = 0;
+
+typedef BOOL (LCAPI *tflcBlockPurge)(HANDLE hBlock);
+tflcBlockPurge pflcBlockPurge = 0;
+
+typedef BOOL (LCAPI *tflcBlockSortEnts)(HANDLE hBlock, BOOL bByLayers, HWND hWnd);
+tflcBlockSortEnts pflcBlockSortEnts = 0;
+
+typedef BOOL (LCAPI *tflcBlockSortEnts2)(HANDLE hBlock, HANDLE idEnts, int nEnts);
+tflcBlockSortEnts2 pflcBlockSortEnts2 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddPoint)(HANDLE hBlock, double X, double Y);
+tflcBlockAddPoint pflcBlockAddPoint = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddPoint2)(HANDLE hBlock, double X, double Y, int PtMode, double PtSize);
+tflcBlockAddPoint2 pflcBlockAddPoint2 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddPoint3d)(HANDLE hBlock, double X, double Y, double Z);
+tflcBlockAddPoint3d pflcBlockAddPoint3d = 0;
+
+typedef int (LCAPI *tflcBlockAddPointsF)(HANDLE hBlock, LPCWSTR szFileName, HWND hWnd);
+tflcBlockAddPointsF pflcBlockAddPointsF = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddXline)(HANDLE hBlock, double X, double Y, double Angle, BOOL bRay);
+tflcBlockAddXline pflcBlockAddXline = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddXline2P)(HANDLE hBlock, double X, double Y, double X2, double Y2, BOOL bRay);
+tflcBlockAddXline2P pflcBlockAddXline2P = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddLine)(HANDLE hBlock, double X1, double Y1, double X2, double Y2);
+tflcBlockAddLine pflcBlockAddLine = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddLineDir)(HANDLE hBlock, double X, double Y, double Angle, double Dist);
+tflcBlockAddLineDir pflcBlockAddLineDir = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddLineTan)(HANDLE hBlock, HANDLE hEnt1, HANDLE hEnt2, int Mode);
+tflcBlockAddLineTan pflcBlockAddLineTan = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddPolyline)(HANDLE hBlock, int FitType, BOOL bClosed, BOOL bFilled);
+tflcBlockAddPolyline pflcBlockAddPolyline = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddRPolygon)(HANDLE hBlock, int nVers, double Xc, double Yc, double R, double Ang0, BOOL bInscribed, BOOL bFilled);
+tflcBlockAddRPolygon pflcBlockAddRPolygon = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddSpline)(HANDLE hBlock, BOOL bClosed, BOOL bFilled);
+tflcBlockAddSpline pflcBlockAddSpline = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddBezier)(HANDLE hBlock);
+tflcBlockAddBezier pflcBlockAddBezier = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddMline)(HANDLE hBlock, int FitType, BOOL bClosed);
+tflcBlockAddMline pflcBlockAddMline = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddRect)(HANDLE hBlock, double Xc, double Yc, double Width, double Height, double Angle, BOOL bFilled);
+tflcBlockAddRect pflcBlockAddRect = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddRect2)(HANDLE hBlock, double Left, double Bottom, double Width, double Height, double Rad, BOOL bFilled);
+tflcBlockAddRect2 pflcBlockAddRect2 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddCircle)(HANDLE hBlock, double X, double Y, double Radius, BOOL bFilled);
+tflcBlockAddCircle pflcBlockAddCircle = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddArc)(HANDLE hBlock, double X, double Y, double Radius, double StartAngle, double ArcAngle);
+tflcBlockAddArc pflcBlockAddArc = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddArc3P)(HANDLE hBlock, double X1, double Y1, double X2, double Y2, double X3, double Y3);
+tflcBlockAddArc3P pflcBlockAddArc3P = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddFillet)(HANDLE hBlock, HANDLE hEnt1, HANDLE hEnt2, double Radius);
+tflcBlockAddFillet pflcBlockAddFillet = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddEllipse)(HANDLE hBlock, double X, double Y, double R1, double R2, double RotAngle, double StartAngle, double ArcAngle);
+tflcBlockAddEllipse pflcBlockAddEllipse = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddText)(HANDLE hBlock, LPCWSTR szText, double X, double Y);
+tflcBlockAddText pflcBlockAddText = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddText2)(HANDLE hBlock, LPCWSTR szText, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique);
+tflcBlockAddText2 pflcBlockAddText2 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddText3)(HANDLE hBlock, LPCWSTR szText, double X1, double Y1, double X2, double Y2, int Align, double HW, double Oblique);
+tflcBlockAddText3 pflcBlockAddText3 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddTextWin)(HANDLE hBlock, LPCWSTR szText, double X, double Y);
+tflcBlockAddTextWin pflcBlockAddTextWin = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddTextWin2)(HANDLE hBlock, LPCWSTR szText, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique);
+tflcBlockAddTextWin2 pflcBlockAddTextWin2 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddMText)(HANDLE hBlock, LPCWSTR szText, double X, double Y, double WrapWidth, int Align, double RotAngle, double H, double WScale);
+tflcBlockAddMText pflcBlockAddMText = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddArcText)(HANDLE hBlock, LPCWSTR szText, double X, double Y, double Radius, double StartAngle, BOOL bClockwise, double H, double WScale, int Align);
+tflcBlockAddArcText pflcBlockAddArcText = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddBlockRef)(HANDLE hBlock, HANDLE hRefBlock, double X, double Y, double Scal, double Angle);
+tflcBlockAddBlockRef pflcBlockAddBlockRef = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddBlockRefID)(HANDLE hBlock, int idRefBlock, double X, double Y, double Scal, double Angle);
+tflcBlockAddBlockRefID pflcBlockAddBlockRefID = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddBlockRefIDH)(HANDLE hBlock, LPCWSTR szIdRefBlock, double X, double Y, double Scal, double Angle);
+tflcBlockAddBlockRefIDH pflcBlockAddBlockRefIDH = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddAttDef)(HANDLE hBlock, int Mode, LPCWSTR szTag, LPCWSTR szPrompt, LPCWSTR szDefVal, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique);
+tflcBlockAddAttDef pflcBlockAddAttDef = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddXref)(HANDLE hBlock, LPCWSTR szFileName, double X, double Y, double ScalX, double ScalY, double Angle);
+tflcBlockAddXref pflcBlockAddXref = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddImageRef)(HANDLE hBlock, HANDLE hImage, double X, double Y, double Width, double Height, BOOL bBorder);
+tflcBlockAddImageRef pflcBlockAddImageRef = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddImageRefUns)(HANDLE hBlock, HANDLE hImage, double X, double Y, double Scal, int Align, BOOL bBorder);
+tflcBlockAddImageRefUns pflcBlockAddImageRefUns = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddImagePlace)(HANDLE hBlock, int Id, double X, double Y, double Width, double Height, BOOL bBorder);
+tflcBlockAddImagePlace pflcBlockAddImagePlace = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddEcw)(HANDLE hBlock, LPCWSTR szFileName);
+tflcBlockAddEcw pflcBlockAddEcw = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddBarcode)(HANDLE hBlock, int BarType, double Xc, double Yc, double Width, double Height, LPCWSTR szText);
+tflcBlockAddBarcode pflcBlockAddBarcode = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddHatch)(HANDLE hBlock, LPCWSTR szFileName, LPCWSTR szPatName, double Scal, double Angle);
+tflcBlockAddHatch pflcBlockAddHatch = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddViewport)(HANDLE hBlock, double Lef, double Bot, double Width, double Height, double DrwPntX, double DrwPntY, double DrwScale, double DrwAngle);
+tflcBlockAddViewport pflcBlockAddViewport = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddFace)(HANDLE hBlock, int Flags, double x0, double y0, double z0, double x1, double y1, double z1, double x2, double y2, double z2);
+tflcBlockAddFace pflcBlockAddFace = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddFace4)(HANDLE hBlock, int Flags, double x0, double y0, double z0, double x1, double y1, double z1, double x2, double y2, double z2, double x3, double y3, double z3);
+tflcBlockAddFace4 pflcBlockAddFace4 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddLeader)(HANDLE hBlock, LPCWSTR szText, double Xt, double Yt, double LandDist, double Xa, double Ya, int Attach, int Align);
+tflcBlockAddLeader pflcBlockAddLeader = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimLin)(HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, double Yt, double Angle, LPCWSTR szText);
+tflcBlockAddDimLin pflcBlockAddDimLin = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimHor)(HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Yt, LPCWSTR szText);
+tflcBlockAddDimHor pflcBlockAddDimHor = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimVer)(HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, LPCWSTR szText);
+tflcBlockAddDimVer pflcBlockAddDimVer = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimAli)(HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, double Yt, LPCWSTR szText);
+tflcBlockAddDimAli pflcBlockAddDimAli = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimAli2)(HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Dt, LPCWSTR szText);
+tflcBlockAddDimAli2 pflcBlockAddDimAli2 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimOrd)(HANDLE hBlock, double Xd, double Yd, double Xt, double Yt, BOOL bX, LPCWSTR szText);
+tflcBlockAddDimOrd pflcBlockAddDimOrd = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimRad)(HANDLE hBlock, double Xc, double Yc, double Xr, double Yr, double Xt, double Yt, LPCWSTR szText);
+tflcBlockAddDimRad pflcBlockAddDimRad = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimRad2)(HANDLE hBlock, double Xc, double Yc, double R, double Angle, double TextOff, LPCWSTR szText);
+tflcBlockAddDimRad2 pflcBlockAddDimRad2 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimDia)(HANDLE hBlock, double Xc, double Yc, double Xr, double Yr, double Xt, double Yt, LPCWSTR szText);
+tflcBlockAddDimDia pflcBlockAddDimDia = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimDia2)(HANDLE hBlock, double Xc, double Yc, double R, double Angle, double TextOff, LPCWSTR szText);
+tflcBlockAddDimDia2 pflcBlockAddDimDia2 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimAng)(HANDLE hBlock, double Xc, double Yc, double X1, double Y1, double X2, double Y2, double Xa, double Ya, double TextPos, LPCWSTR szText);
+tflcBlockAddDimAng pflcBlockAddDimAng = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddDimAng2)(HANDLE hBlock, double X1, double Y1, double X2, double Y2, double X3, double Y3, double X4, double Y4, double Xa, double Ya, double TextPos, LPCWSTR szText);
+tflcBlockAddDimAng2 pflcBlockAddDimAng2 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddRPlan)(HANDLE hBlock);
+tflcBlockAddRPlan pflcBlockAddRPlan = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddRPlan2)(HANDLE hBlock, HANDLE hStartEnt);
+tflcBlockAddRPlan2 pflcBlockAddRPlan2 = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddArrow)(HANDLE hBlock, double X1, double Y1, double X2, double Y2);
+tflcBlockAddArrow pflcBlockAddArrow = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddSpiral)(HANDLE hBlock, double Xc, double Yc, double R, double Turns, BOOL bDirCW, BOOL bClosed);
+tflcBlockAddSpiral pflcBlockAddSpiral = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddCamview)(HANDLE hBlock, double Lef, double Bot, double Width, double Height);
+tflcBlockAddCamview pflcBlockAddCamview = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddTIN)(HANDLE hBlock, LPCWSTR szFileName, int FileType);
+tflcBlockAddTIN pflcBlockAddTIN = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddClone)(HANDLE hBlock, HANDLE hEnt);
+tflcBlockAddClone pflcBlockAddClone = 0;
+
+typedef BOOL (LCAPI *tflcBlockBeginShape)(HANDLE hBlock);
+tflcBlockBeginShape pflcBlockBeginShape = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddShape)(HANDLE hBlock);
+tflcBlockAddShape pflcBlockAddShape = 0;
+
+typedef HANDLE (LCAPI *tflcBlockAddShapeSel)(HANDLE hBlock, BOOL bErase);
+tflcBlockAddShapeSel pflcBlockAddShapeSel = 0;
+
+typedef HANDLE (LCAPI *tflcBlockRepEllipse)(HANDLE hBlock, HANDLE hEll, int* pRetType);
+tflcBlockRepEllipse pflcBlockRepEllipse = 0;
+
+typedef int (LCAPI *tflcBlockJoinAll)(HANDLE hBlock, double Delta);
+tflcBlockJoinAll pflcBlockJoinAll = 0;
+
+typedef int (LCAPI *tflcBlockCopyLayer)(HANDLE hBlock, HANDLE hLayerSrc, HANDLE hLayerDest);
+tflcBlockCopyLayer pflcBlockCopyLayer = 0;
+
+typedef BOOL (LCAPI *tflcBlockDeleteEnt)(HANDLE hBlock, HANDLE hEnt);
+tflcBlockDeleteEnt pflcBlockDeleteEnt = 0;
+
+typedef HANDLE (LCAPI *tflcBlockGetFirstEnt)(HANDLE hBlock);
+tflcBlockGetFirstEnt pflcBlockGetFirstEnt = 0;
+
+typedef HANDLE (LCAPI *tflcBlockGetNextEnt)(HANDLE hBlock, HANDLE hEnt);
+tflcBlockGetNextEnt pflcBlockGetNextEnt = 0;
+
+typedef HANDLE (LCAPI *tflcBlockGetLastEnt)(HANDLE hBlock);
+tflcBlockGetLastEnt pflcBlockGetLastEnt = 0;
+
+typedef HANDLE (LCAPI *tflcBlockGetPrevEnt)(HANDLE hBlock, HANDLE hEnt);
+tflcBlockGetPrevEnt pflcBlockGetPrevEnt = 0;
+
+typedef HANDLE (LCAPI *tflcBlockGetEntByID)(HANDLE hBlock, int Id);
+tflcBlockGetEntByID pflcBlockGetEntByID = 0;
+
+typedef HANDLE (LCAPI *tflcBlockGetEntByIDH)(HANDLE hBlock, LPCWSTR szId);
+tflcBlockGetEntByIDH pflcBlockGetEntByIDH = 0;
+
+typedef HANDLE (LCAPI *tflcBlockGetEntByKey)(HANDLE hBlock, int Key);
+tflcBlockGetEntByKey pflcBlockGetEntByKey = 0;
+
+typedef HANDLE (LCAPI *tflcBlockGetBlkRefByTag)(HANDLE hBlock, HANDLE hBlockAtt, LPCWSTR szTag, LPCWSTR szValue, BOOL bSelect);
+tflcBlockGetBlkRefByTag pflcBlockGetBlkRefByTag = 0;
+
+typedef HANDLE (LCAPI *tflcBlockGetTIN)(HANDLE hBlock, LPCWSTR szName);
+tflcBlockGetTIN pflcBlockGetTIN = 0;
+
+typedef BOOL (LCAPI *tflcBlockUnselect)(HANDLE hBlock);
+tflcBlockUnselect pflcBlockUnselect = 0;
+
+typedef BOOL (LCAPI *tflcBlockSelectEnt)(HANDLE hBlock, HANDLE hEntity, BOOL bSelect);
+tflcBlockSelectEnt pflcBlockSelectEnt = 0;
+
+typedef BOOL (LCAPI *tflcBlockSelErase)(HANDLE hBlock);
+tflcBlockSelErase pflcBlockSelErase = 0;
+
+typedef BOOL (LCAPI *tflcBlockSelMove)(HANDLE hBlock, double dX, double dY, BOOL bCopy, BOOL bNewSelect);
+tflcBlockSelMove pflcBlockSelMove = 0;
+
+typedef BOOL (LCAPI *tflcBlockSelScale)(HANDLE hBlock, double X0, double Y0, double Scal, BOOL bCopy, BOOL bNewSelect);
+tflcBlockSelScale pflcBlockSelScale = 0;
+
+typedef BOOL (LCAPI *tflcBlockSelRotate)(HANDLE hBlock, double X0, double Y0, double Angle, BOOL bCopy, BOOL bNewSelect);
+tflcBlockSelRotate pflcBlockSelRotate = 0;
+
+typedef BOOL (LCAPI *tflcBlockSelMirror)(HANDLE hBlock, double X1, double Y1, double X2, double Y2, BOOL bCopy, BOOL bNewSelect);
+tflcBlockSelMirror pflcBlockSelMirror = 0;
+
+typedef BOOL (LCAPI *tflcBlockSelExplode)(HANDLE hBlock);
+tflcBlockSelExplode pflcBlockSelExplode = 0;
+
+typedef BOOL (LCAPI *tflcBlockSelSplit)(HANDLE hBlock, int nParts);
+tflcBlockSelSplit pflcBlockSelSplit = 0;
+
+typedef HANDLE (LCAPI *tflcBlockSelJoin)(HANDLE hBlock, double Delta);
+tflcBlockSelJoin pflcBlockSelJoin = 0;
+
+typedef BOOL (LCAPI *tflcBlockSelAlign)(HANDLE hBlock, int Mode, double X, double Y);
+tflcBlockSelAlign pflcBlockSelAlign = 0;
+
+typedef HANDLE (LCAPI *tflcBlockSelBlock)(HANDLE hBlock, LPCWSTR szName, double X, double Y, int Mode, BOOL bOverwrite);
+tflcBlockSelBlock pflcBlockSelBlock = 0;
+
+typedef HANDLE (LCAPI *tflcBlockGetFirstSel)(HANDLE hBlock);
+tflcBlockGetFirstSel pflcBlockGetFirstSel = 0;
+
+typedef HANDLE (LCAPI *tflcBlockGetNextSel)(HANDLE hBlock);
+tflcBlockGetNextSel pflcBlockGetNextSel = 0;
+
+typedef BOOL (LCAPI *tflcBlockOrderByLayers)(HANDLE hBlock, HWND hWnd);
+tflcBlockOrderByLayers pflcBlockOrderByLayers = 0;
+
+typedef BOOL (LCAPI *tflcBlockSortTSP)(HANDLE hBlock, HANDLE hLayer, HWND hWnd);
+tflcBlockSortTSP pflcBlockSortTSP = 0;
+
+typedef double (LCAPI *tflcBlockGetJumpsLen)(HANDLE hBlock, HANDLE hLayer, HWND hWnd);
+tflcBlockGetJumpsLen pflcBlockGetJumpsLen = 0;
+
+typedef BOOL (LCAPI *tflcLayerClear)(HANDLE hLayer, HANDLE hBlock);
+tflcLayerClear pflcLayerClear = 0;
+
+typedef BOOL (LCAPI *tflcLayerCopyProps)(HANDLE hLayer, HANDLE hFromLayer);
+tflcLayerCopyProps pflcLayerCopyProps = 0;
+
+typedef BOOL (LCAPI *tflcFillSetLine)(HANDLE hFill, int iLine, double Dist, double Angle, double W);
+tflcFillSetLine pflcFillSetLine = 0;
+
+typedef BOOL (LCAPI *tflcMLStyleAddLine)(HANDLE hStyle, double Offset, LPCWSTR szColor, HANDLE hLtype);
+tflcMLStyleAddLine pflcMLStyleAddLine = 0;
+
+typedef BOOL (LCAPI *tflcMLStyleDelLine)(HANDLE hStyle, int iLine);
+tflcMLStyleDelLine pflcMLStyleDelLine = 0;
+
+typedef BOOL (LCAPI *tflcMLStyleSortLines)(HANDLE hStyle);
+tflcMLStyleSortLines pflcMLStyleSortLines = 0;
+
+typedef BOOL (LCAPI *tflcEntType)(HANDLE hEnt, int Typ);
+tflcEntType pflcEntType = 0;
+
+typedef BOOL (LCAPI *tflcEntErase)(HANDLE hEnt, BOOL bErase);
+tflcEntErase pflcEntErase = 0;
+
+typedef BOOL (LCAPI *tflcEntMove)(HANDLE hEnt, double dX, double dY);
+tflcEntMove pflcEntMove = 0;
+
+typedef BOOL (LCAPI *tflcEntAlign)(HANDLE hEnt, int Alignment, double X, double Y);
+tflcEntAlign pflcEntAlign = 0;
+
+typedef BOOL (LCAPI *tflcEntScale)(HANDLE hEnt, double X0, double Y0, double Scal);
+tflcEntScale pflcEntScale = 0;
+
+typedef BOOL (LCAPI *tflcEntRotate)(HANDLE hEnt, double X0, double Y0, double Angle);
+tflcEntRotate pflcEntRotate = 0;
+
+typedef BOOL (LCAPI *tflcEntMirror)(HANDLE hEnt, double X1, double Y1, double X2, double Y2);
+tflcEntMirror pflcEntMirror = 0;
+
+typedef BOOL (LCAPI *tflcEntExplode)(HANDLE hEnt, BOOL bSelect, BOOL bErase);
+tflcEntExplode pflcEntExplode = 0;
+
+typedef HANDLE (LCAPI *tflcEntSplit)(HANDLE hEnt, int nParts, BOOL bSelectNew, BOOL bDeleteEnt);
+tflcEntSplit pflcEntSplit = 0;
+
+typedef HANDLE (LCAPI *tflcEntBreak)(HANDLE hEnt, double X, double Y, double Delta, BOOL bSelectNew, BOOL bDeleteEnt);
+tflcEntBreak pflcEntBreak = 0;
+
+typedef HANDLE (LCAPI *tflcEntBreak2)(HANDLE hEnt, HANDLE hPtbuf, double Delta, BOOL bSelectNew, BOOL bDeleteEnt);
+tflcEntBreak2 pflcEntBreak2 = 0;
+
+typedef BOOL (LCAPI *tflcEntOffset)(HANDLE hEnt, double Dist);
+tflcEntOffset pflcEntOffset = 0;
+
+typedef BOOL (LCAPI *tflcEntExtend)(HANDLE hEnt, HANDLE hEntEdge, BOOL bApparent);
+tflcEntExtend pflcEntExtend = 0;
+
+typedef BOOL (LCAPI *tflcEntToTop)(HANDLE hEnt);
+tflcEntToTop pflcEntToTop = 0;
+
+typedef BOOL (LCAPI *tflcEntToBottom)(HANDLE hEnt);
+tflcEntToBottom pflcEntToBottom = 0;
+
+typedef BOOL (LCAPI *tflcEntToAbove)(HANDLE hEnt, HANDLE hEnt2);
+tflcEntToAbove pflcEntToAbove = 0;
+
+typedef BOOL (LCAPI *tflcEntToUnder)(HANDLE hEnt, HANDLE hEnt2);
+tflcEntToUnder pflcEntToUnder = 0;
+
+typedef BOOL (LCAPI *tflcEntGetGrip)(HANDLE hEnt, int iGrip, double* pX, double* pY);
+tflcEntGetGrip pflcEntGetGrip = 0;
+
+typedef BOOL (LCAPI *tflcEntPutGrip)(HANDLE hEnt, int iGrip, double X, double Y);
+tflcEntPutGrip pflcEntPutGrip = 0;
+
+typedef BOOL (LCAPI *tflcEntUpdate)(HANDLE hEnt);
+tflcEntUpdate pflcEntUpdate = 0;
+
+typedef BOOL (LCAPI *tflcEntCopyBase)(HANDLE hEnt, HANDLE hEntFrom);
+tflcEntCopyBase pflcEntCopyBase = 0;
+
+typedef BOOL (LCAPI *tflcEntXData)(HANDLE hEnt, int Id, int Flags, int nBytes);
+tflcEntXData pflcEntXData = 0;
+
+typedef BOOL (LCAPI *tflcEntContainEnt)(HANDLE hEnt, HANDLE hEnt2);
+tflcEntContainEnt pflcEntContainEnt = 0;
+
+typedef BOOL (LCAPI *tflcEntCrossEnt)(HANDLE hEnt, HANDLE hEnt2);
+tflcEntCrossEnt pflcEntCrossEnt = 0;
+
+typedef BOOL (LCAPI *tflcEntReverse)(HANDLE hEnt);
+tflcEntReverse pflcEntReverse = 0;
+
+typedef BOOL (LCAPI *tflcEntGetPoint)(HANDLE hEnt, double Dist, double* pX, double* pY, double* pAngle);
+tflcEntGetPoint pflcEntGetPoint = 0;
+
+typedef double (LCAPI *tflcEntGetDist)(HANDLE hEnt, double X, double Y, double* pX2, double* pY2, double* pDist);
+tflcEntGetDist pflcEntGetDist = 0;
+
+typedef BOOL (LCAPI *tflcEntTransform)(HANDLE hEnt, HANDLE hTransform);
+tflcEntTransform pflcEntTransform = 0;
+
+typedef int (LCAPI *tflcIntersection)(HANDLE hEnt, HANDLE hEnt2, int Apparent);
+tflcIntersection pflcIntersection = 0;
+
+typedef BOOL (LCAPI *tflcInterGetPoint)(int iPoint, double* pX, double* pY);
+tflcInterGetPoint pflcInterGetPoint = 0;
+
+typedef BOOL (LCAPI *tflcLineGetPoint)(HANDLE hLine, int Mode, double Dist, double* pX, double* pY);
+tflcLineGetPoint pflcLineGetPoint = 0;
+
+typedef HANDLE (LCAPI *tflcPlineAddVer)(HANDLE hPline, HANDLE hVer, double X, double Y);
+tflcPlineAddVer pflcPlineAddVer = 0;
+
+typedef HANDLE (LCAPI *tflcPlineAddVer2)(HANDLE hPline, HANDLE hVer, double X, double Y, double Param, double W0, double W1);
+tflcPlineAddVer2 pflcPlineAddVer2 = 0;
+
+typedef HANDLE (LCAPI *tflcPlineAddVerDir)(HANDLE hPline, HANDLE hVer, double Ang, double Length);
+tflcPlineAddVerDir pflcPlineAddVerDir = 0;
+
+typedef BOOL (LCAPI *tflcPlineEnd)(HANDLE hPline);
+tflcPlineEnd pflcPlineEnd = 0;
+
+typedef BOOL (LCAPI *tflcPlineFromPtbuf)(HANDLE hPline, HANDLE hPtbuf);
+tflcPlineFromPtbuf pflcPlineFromPtbuf = 0;
+
+typedef BOOL (LCAPI *tflcPlineFromMpgon)(HANDLE hPline, HANDLE hMpgon);
+tflcPlineFromMpgon pflcPlineFromMpgon = 0;
+
+typedef BOOL (LCAPI *tflcPlineFromFile)(HANDLE hPline, LPCWSTR szFileName);
+tflcPlineFromFile pflcPlineFromFile = 0;
+
+typedef BOOL (LCAPI *tflcPlineDeleteVer)(HANDLE hPline, HANDLE hVer);
+tflcPlineDeleteVer pflcPlineDeleteVer = 0;
+
+typedef int (LCAPI *tflcPlineDelExVers)(HANDLE hPline, double Delta);
+tflcPlineDelExVers pflcPlineDelExVers = 0;
+
+typedef HANDLE (LCAPI *tflcPlineGetFirstVer)(HANDLE hPline);
+tflcPlineGetFirstVer pflcPlineGetFirstVer = 0;
+
+typedef HANDLE (LCAPI *tflcPlineGetNextVer)(HANDLE hPline, HANDLE hVer);
+tflcPlineGetNextVer pflcPlineGetNextVer = 0;
+
+typedef HANDLE (LCAPI *tflcPlineGetLastVer)(HANDLE hPline);
+tflcPlineGetLastVer pflcPlineGetLastVer = 0;
+
+typedef HANDLE (LCAPI *tflcPlineGetPrevVer)(HANDLE hPline, HANDLE hVer);
+tflcPlineGetPrevVer pflcPlineGetPrevVer = 0;
+
+typedef HANDLE (LCAPI *tflcPlineGetVer)(HANDLE hPline, int Index);
+tflcPlineGetVer pflcPlineGetVer = 0;
+
+typedef HANDLE (LCAPI *tflcPlineGetVerPt)(HANDLE hPline, double X, double Y, double Delta);
+tflcPlineGetVerPt pflcPlineGetVerPt = 0;
+
+typedef HANDLE (LCAPI *tflcPlineGetSeg)(HANDLE hPline, double X, double Y, double Delta);
+tflcPlineGetSeg pflcPlineGetSeg = 0;
+
+typedef BOOL (LCAPI *tflcPlineReverse)(HANDLE hPline);
+tflcPlineReverse pflcPlineReverse = 0;
+
+typedef BOOL (LCAPI *tflcPlineSetStartVer)(HANDLE hPline, HANDLE hVer);
+tflcPlineSetStartVer pflcPlineSetStartVer = 0;
+
+typedef int (LCAPI *tflcPlineContainPoint)(HANDLE hPline, double X, double Y);
+tflcPlineContainPoint pflcPlineContainPoint = 0;
+
+typedef BOOL (LCAPI *tflcPlineGetRoundPrm)(HANDLE hPline, HANDLE hVer, double* pX0, double* pY0, double* pBulge, double* pX1, double* pY1);
+tflcPlineGetRoundPrm pflcPlineGetRoundPrm = 0;
+
+typedef BOOL (LCAPI *tflcPlineGetPoint)(HANDLE hPline, double Dist, double* pX, double* pY, double* pAngle);
+tflcPlineGetPoint pflcPlineGetPoint = 0;
+
+typedef BOOL (LCAPI *tflcPlineGetPointOpp)(HANDLE hPline, double Dist, double* pX, double* pY, double* pAngle, double* pX2, double* pY2);
+tflcPlineGetPointOpp pflcPlineGetPointOpp = 0;
+
+typedef double (LCAPI *tflcPlineGetDist)(HANDLE hPline, double X, double Y, double* pX2, double* pY2, double* pDist);
+tflcPlineGetDist pflcPlineGetDist = 0;
+
+typedef int (LCAPI *tflcPlineDivide)(HANDLE hPline, int nPoints, BOOL bAngle);
+tflcPlineDivide pflcPlineDivide = 0;
+
+typedef int (LCAPI *tflcPlineDivide2)(HANDLE hPline, double Delta, BOOL bAngle);
+tflcPlineDivide2 pflcPlineDivide2 = 0;
+
+typedef BOOL (LCAPI *tflcGetDivPt)(int iPnt, double* pX, double* pY, double* pAngle);
+tflcGetDivPt pflcGetDivPt = 0;
+
+typedef BOOL (LCAPI *tflcPlineMakeArrow)(HANDLE hPline, double Hline, double Harr);
+tflcPlineMakeArrow pflcPlineMakeArrow = 0;
+
+typedef HANDLE (LCAPI *tflcPlineSplitBySI)(HANDLE hPline, BOOL bSelect, BOOL bErase);
+tflcPlineSplitBySI pflcPlineSplitBySI = 0;
+
+typedef HANDLE (LCAPI *tflcBezierAddVer)(HANDLE hBez, HANDLE hVer, double X, double Y);
+tflcBezierAddVer pflcBezierAddVer = 0;
+
+typedef BOOL (LCAPI *tflcBezierEnd)(HANDLE hBez);
+tflcBezierEnd pflcBezierEnd = 0;
+
+typedef BOOL (LCAPI *tflcBezierSetVerPrm)(HANDLE hBez, HANDLE hVer, int Side, double Leng, double Ang);
+tflcBezierSetVerPrm pflcBezierSetVerPrm = 0;
+
+typedef HANDLE (LCAPI *tflcMlineAddVer)(HANDLE hMline, HANDLE hVer, double X, double Y);
+tflcMlineAddVer pflcMlineAddVer = 0;
+
+typedef HANDLE (LCAPI *tflcMlineAddVerDir)(HANDLE hMline, HANDLE hVer, double Ang, double Length);
+tflcMlineAddVerDir pflcMlineAddVerDir = 0;
+
+typedef BOOL (LCAPI *tflcMlineDeleteVer)(HANDLE hMline, HANDLE hVer);
+tflcMlineDeleteVer pflcMlineDeleteVer = 0;
+
+typedef HANDLE (LCAPI *tflcMlineGetFirstVer)(HANDLE hMline);
+tflcMlineGetFirstVer pflcMlineGetFirstVer = 0;
+
+typedef HANDLE (LCAPI *tflcMlineGetNextVer)(HANDLE hMline, HANDLE hVer);
+tflcMlineGetNextVer pflcMlineGetNextVer = 0;
+
+typedef HANDLE (LCAPI *tflcMlineGetLastVer)(HANDLE hMline);
+tflcMlineGetLastVer pflcMlineGetLastVer = 0;
+
+typedef HANDLE (LCAPI *tflcMlineGetPrevVer)(HANDLE hMline, HANDLE hVer);
+tflcMlineGetPrevVer pflcMlineGetPrevVer = 0;
+
+typedef HANDLE (LCAPI *tflcMlineGetVer)(HANDLE hMline, int Index);
+tflcMlineGetVer pflcMlineGetVer = 0;
+
+typedef HANDLE (LCAPI *tflcMlineGetVerPt)(HANDLE hMline, double X, double Y, double Delta);
+tflcMlineGetVerPt pflcMlineGetVerPt = 0;
+
+typedef HANDLE (LCAPI *tflcMlineGetSeg)(HANDLE hMline, double X, double Y, double Delta);
+tflcMlineGetSeg pflcMlineGetSeg = 0;
+
+typedef BOOL (LCAPI *tflcMlineReverse)(HANDLE hMline);
+tflcMlineReverse pflcMlineReverse = 0;
+
+typedef HANDLE (LCAPI *tflcRPlanAddVer)(HANDLE hRPlan, double X, double Y);
+tflcRPlanAddVer pflcRPlanAddVer = 0;
+
+typedef BOOL (LCAPI *tflcRPlanSetCurve)(HANDLE hVer, double Radius, double LenClot1, double LenClot2);
+tflcRPlanSetCurve pflcRPlanSetCurve = 0;
+
+typedef BOOL (LCAPI *tflcRPlanSetPos)(HANDLE hVer, double X, double Y);
+tflcRPlanSetPos pflcRPlanSetPos = 0;
+
+typedef BOOL (LCAPI *tflcRPlanDeleteVer)(HANDLE hRPlan, HANDLE hVer);
+tflcRPlanDeleteVer pflcRPlanDeleteVer = 0;
+
+typedef HANDLE (LCAPI *tflcRPlanGetFirstVer)(HANDLE hRPlan);
+tflcRPlanGetFirstVer pflcRPlanGetFirstVer = 0;
+
+typedef HANDLE (LCAPI *tflcRPlanGetNextVer)(HANDLE hRPlan, HANDLE hVer);
+tflcRPlanGetNextVer pflcRPlanGetNextVer = 0;
+
+typedef HANDLE (LCAPI *tflcRPlanGetLastVer)(HANDLE hRPlan);
+tflcRPlanGetLastVer pflcRPlanGetLastVer = 0;
+
+typedef HANDLE (LCAPI *tflcRPlanGetPrevVer)(HANDLE hRPlan, HANDLE hVer);
+tflcRPlanGetPrevVer pflcRPlanGetPrevVer = 0;
+
+typedef HANDLE (LCAPI *tflcRPlanGetVer)(HANDLE hRPlan, int Index);
+tflcRPlanGetVer pflcRPlanGetVer = 0;
+
+typedef BOOL (LCAPI *tflcRPlanGetPoint)(HANDLE hRPlan, double Dist, double* pX, double* pY, double* pAngle, int* pSide);
+tflcRPlanGetPoint pflcRPlanGetPoint = 0;
+
+typedef BOOL (LCAPI *tflcRPlanGetDist)(HANDLE hRPlan, double X, double Y, double* pX2, double* pY2, double* pDist, double* pOffset);
+tflcRPlanGetDist pflcRPlanGetDist = 0;
+
+typedef BOOL (LCAPI *tflcRPlanWriteCSV)(HANDLE hRPlan, LPCWSTR szFileName);
+tflcRPlanWriteCSV pflcRPlanWriteCSV = 0;
+
+typedef BOOL (LCAPI *tflcXlinePutDir)(HANDLE hXline, double X, double Y);
+tflcXlinePutDir pflcXlinePutDir = 0;
+
+typedef int (LCAPI *tflcRectGetPolyline)(HANDLE hRect, double* pX, double* pY, double* pBulge);
+tflcRectGetPolyline pflcRectGetPolyline = 0;
+
+typedef BOOL (LCAPI *tflcImgRefGetPixel)(HANDLE hImgRef, int iX, int iY, double* pX, double* pY, int* pColor);
+tflcImgRefGetPixel pflcImgRefGetPixel = 0;
+
+typedef BOOL (LCAPI *tflcImgRefResize)(HANDLE hImgRef, int NewWidth, int NewHeight, int Method);
+tflcImgRefResize pflcImgRefResize = 0;
+
+typedef BOOL (LCAPI *tflcHatchSetPattern)(HANDLE hHatch, LPCWSTR szFileName, LPCWSTR szPatName, double Scal, double Angle);
+tflcHatchSetPattern pflcHatchSetPattern = 0;
+
+typedef BOOL (LCAPI *tflcHatchBoundStart)(HANDLE hHatch);
+tflcHatchBoundStart pflcHatchBoundStart = 0;
+
+typedef BOOL (LCAPI *tflcHatchBoundPoint)(HANDLE hHatch, double X, double Y);
+tflcHatchBoundPoint pflcHatchBoundPoint = 0;
+
+typedef BOOL (LCAPI *tflcHatchBoundEntity)(HANDLE hHatch, HANDLE hEnt);
+tflcHatchBoundEntity pflcHatchBoundEntity = 0;
+
+typedef BOOL (LCAPI *tflcHatchBoundEndLoop)(HANDLE hHatch);
+tflcHatchBoundEndLoop pflcHatchBoundEndLoop = 0;
+
+typedef BOOL (LCAPI *tflcHatchBoundEnd)(HANDLE hHatch);
+tflcHatchBoundEnd pflcHatchBoundEnd = 0;
+
+typedef BOOL (LCAPI *tflcHatchPatStart)(HANDLE hHatch);
+tflcHatchPatStart pflcHatchPatStart = 0;
+
+typedef BOOL (LCAPI *tflcHatchPatLine)(HANDLE hHatch, double Angle, double x0, double y0, double dx, double dy, int nDash, double L0, double L1, double L2, double L3, double L4, double L5, double L6, double L7);
+tflcHatchPatLine pflcHatchPatLine = 0;
+
+typedef BOOL (LCAPI *tflcHatchPatEnd)(HANDLE hHatch);
+tflcHatchPatEnd pflcHatchPatEnd = 0;
+
+typedef int (LCAPI *tflcHatchGetLoopSize)(HANDLE hHatch, int iLoop);
+tflcHatchGetLoopSize pflcHatchGetLoopSize = 0;
+
+typedef BOOL (LCAPI *tflcHatchGetPoint)(HANDLE hHatch, int iPnt, double* pX, double* pY);
+tflcHatchGetPoint pflcHatchGetPoint = 0;
+
+typedef HANDLE (LCAPI *tflcHatchGetEnt)(HANDLE hHatch, int Mode);
+tflcHatchGetEnt pflcHatchGetEnt = 0;
+
+typedef BOOL (LCAPI *tflcVportSetView)(HANDLE hVport, double Xcen, double Ycen, double Scal, double Angle);
+tflcVportSetView pflcVportSetView = 0;
+
+typedef BOOL (LCAPI *tflcVportLayerDlg)(HANDLE hVport, HANDLE hLcWnd);
+tflcVportLayerDlg pflcVportLayerDlg = 0;
+
+typedef BOOL (LCAPI *tflcVportLayerCmd)(HANDLE hVport, int Cmd, HANDLE hLayer);
+tflcVportLayerCmd pflcVportLayerCmd = 0;
+
+typedef HANDLE (LCAPI *tflcBlkRefAddAtt)(HANDLE hBlockRef, LPCWSTR szTag, LPCWSTR szValue);
+tflcBlkRefAddAtt pflcBlkRefAddAtt = 0;
+
+typedef HANDLE (LCAPI *tflcBlkRefGetFirstAtt)(HANDLE hBlockRef);
+tflcBlkRefGetFirstAtt pflcBlkRefGetFirstAtt = 0;
+
+typedef HANDLE (LCAPI *tflcBlkRefGetNextAtt)(HANDLE hBlockRef, HANDLE hAttrib);
+tflcBlkRefGetNextAtt pflcBlkRefGetNextAtt = 0;
+
+typedef HANDLE (LCAPI *tflcBlkRefGetAtt)(HANDLE hBlockRef, LPCWSTR szTag);
+tflcBlkRefGetAtt pflcBlkRefGetAtt = 0;
+
+typedef LPCWSTR (LCAPI *tflcBlkRefGetAttVal)(HANDLE hBlockRef, LPCWSTR szTag);
+tflcBlkRefGetAttVal pflcBlkRefGetAttVal = 0;
+
+typedef BOOL (LCAPI *tflcBlkRefPutAttVal)(HANDLE hBlockRef, LPCWSTR szTag, LPCWSTR szValue);
+tflcBlkRefPutAttVal pflcBlkRefPutAttVal = 0;
+
+typedef BOOL (LCAPI *tflcShapeAddEnt)(HANDLE hShape, HANDLE hEnt, BOOL bErase);
+tflcShapeAddEnt pflcShapeAddEnt = 0;
+
+typedef BOOL (LCAPI *tflcShapeEnd)(HANDLE hShape);
+tflcShapeEnd pflcShapeEnd = 0;
+
+typedef HANDLE (LCAPI *tflcShapeGetFirstEnt)(HANDLE hShape);
+tflcShapeGetFirstEnt pflcShapeGetFirstEnt = 0;
+
+typedef HANDLE (LCAPI *tflcShapeGetNextEnt)(HANDLE hShape, HANDLE hEnt);
+tflcShapeGetNextEnt pflcShapeGetNextEnt = 0;
+
+typedef HANDLE (LCAPI *tflcShapeGetLastEnt)(HANDLE hShape);
+tflcShapeGetLastEnt pflcShapeGetLastEnt = 0;
+
+typedef HANDLE (LCAPI *tflcShapeGetPrevEnt)(HANDLE hShape, HANDLE hEnt);
+tflcShapeGetPrevEnt pflcShapeGetPrevEnt = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_AddPoint)(HANDLE hTIN, LPCWSTR szNamePtype, double X, double Y, double Z);
+tflcTIN_AddPoint pflcTIN_AddPoint = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_PtypeGetByName)(HANDLE hTIN, LPCWSTR szName);
+tflcTIN_PtypeGetByName pflcTIN_PtypeGetByName = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_PtypeGetFirst)(HANDLE hTIN);
+tflcTIN_PtypeGetFirst pflcTIN_PtypeGetFirst = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_PtypeGetNext)(HANDLE hTIN, HANDLE hPtype);
+tflcTIN_PtypeGetNext pflcTIN_PtypeGetNext = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_PntGetFirst)(HANDLE hTIN);
+tflcTIN_PntGetFirst pflcTIN_PntGetFirst = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_PntGetNext)(HANDLE hTIN, HANDLE hPnt);
+tflcTIN_PntGetNext pflcTIN_PntGetNext = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_PntGetNear)(HANDLE hTIN, double X, double Y);
+tflcTIN_PntGetNear pflcTIN_PntGetNear = 0;
+
+typedef int (LCAPI *tflcTIN_PntDelDup)(HANDLE hTIN, double Delta, HANDLE hLcWnd);
+tflcTIN_PntDelDup pflcTIN_PntDelDup = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_TriGetFirst)(HANDLE hTIN);
+tflcTIN_TriGetFirst pflcTIN_TriGetFirst = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_TriGetNext)(HANDLE hTIN, HANDLE hTrian);
+tflcTIN_TriGetNext pflcTIN_TriGetNext = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_TriGetByPos)(HANDLE hTIN, double X, double Y);
+tflcTIN_TriGetByPos pflcTIN_TriGetByPos = 0;
+
+typedef BOOL (LCAPI *tflcTIN_TriGetEdge)(HANDLE hTIN, HANDLE hTrian, int iEdge);
+tflcTIN_TriGetEdge pflcTIN_TriGetEdge = 0;
+
+typedef int (LCAPI *tflcTIN_TriUpdate)(HANDLE hTIN, HANDLE hPnt);
+tflcTIN_TriUpdate pflcTIN_TriUpdate = 0;
+
+typedef BOOL (LCAPI *tflcTIN_Bnd)(HANDLE hTIN, double MaxDist, HANDLE hLcWnd);
+tflcTIN_Bnd pflcTIN_Bnd = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_BndGetPoint)(HANDLE hTIN, int iPnt);
+tflcTIN_BndGetPoint pflcTIN_BndGetPoint = 0;
+
+typedef BOOL (LCAPI *tflcTIN_Triangulate)(HANDLE hTIN, HANDLE hLcWnd);
+tflcTIN_Triangulate pflcTIN_Triangulate = 0;
+
+typedef int (LCAPI *tflcTIN_Isolines)(HANDLE hTIN, double Zstep, int BoldStep, HANDLE hLcWnd);
+tflcTIN_Isolines pflcTIN_Isolines = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_IsoGetFirst)(HANDLE hTIN);
+tflcTIN_IsoGetFirst pflcTIN_IsoGetFirst = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_IsoGetNext)(HANDLE hTIN, HANDLE hIso);
+tflcTIN_IsoGetNext pflcTIN_IsoGetNext = 0;
+
+typedef int (LCAPI *tflcTIN_IsoMakeLabels)(HANDLE hIso);
+tflcTIN_IsoMakeLabels pflcTIN_IsoMakeLabels = 0;
+
+typedef BOOL (LCAPI *tflcTIN_GetIsoLabel)(int iLabel, double* pX, double* pY, double* pAngle, int* pAlign);
+tflcTIN_GetIsoLabel pflcTIN_GetIsoLabel = 0;
+
+typedef BOOL (LCAPI *tflcTIN_GetZ)(HANDLE hTIN, double X, double Y, double* pZ);
+tflcTIN_GetZ pflcTIN_GetZ = 0;
+
+typedef BOOL (LCAPI *tflcTIN_ColorFill)(HANDLE hTIN, double Zstep, double PixelSize, HANDLE hLcWnd);
+tflcTIN_ColorFill pflcTIN_ColorFill = 0;
+
+typedef BOOL (LCAPI *tflcTIN_Save)(HANDLE hTIN, LPCWSTR szFileName, int Mode, BOOL bByBndr, HANDLE hLcWnd);
+tflcTIN_Save pflcTIN_Save = 0;
+
+typedef int (LCAPI *tflcTIN_InterLine)(HANDLE hTIN, double X0, double Y0, double X1, double Y1);
+tflcTIN_InterLine pflcTIN_InterLine = 0;
+
+typedef BOOL (LCAPI *tflcTIN_InterGetPoint)(HANDLE hTIN, int iPnt, double* pX, double* pY, double* pZ);
+tflcTIN_InterGetPoint pflcTIN_InterGetPoint = 0;
+
+typedef BOOL (LCAPI *tflcTIN_Clear)(HANDLE hTIN);
+tflcTIN_Clear pflcTIN_Clear = 0;
+
+typedef HANDLE (LCAPI *tflcTIN_AddTrian)(HANDLE hTIN, int iPnt0, int iPnt1, int iPnt2);
+tflcTIN_AddTrian pflcTIN_AddTrian = 0;
+
+typedef BOOL (LCAPI *tflcTIN_BndAddPnt)(HANDLE hTIN, int iPnt);
+tflcTIN_BndAddPnt pflcTIN_BndAddPnt = 0;
+
+typedef BOOL (LCAPI *tflcTIN_Merge)(HANDLE hTIN, LPCWSTR szFileName, HANDLE hLcWnd);
+tflcTIN_Merge pflcTIN_Merge = 0;
+
+typedef int (LCAPI *tflcColorRGB)(int Red, int Green, int Blue);
+tflcColorRGB pflcColorRGB = 0;
+
+typedef BOOL (LCAPI *tflcColorIsRGB)(LPCWSTR szColor);
+tflcColorIsRGB pflcColorIsRGB = 0;
+
+typedef int (LCAPI *tflcColorGetRed)(LPCWSTR szColor);
+tflcColorGetRed pflcColorGetRed = 0;
+
+typedef int (LCAPI *tflcColorGetGreen)(LPCWSTR szColor);
+tflcColorGetGreen pflcColorGetGreen = 0;
+
+typedef int (LCAPI *tflcColorGetBlue)(LPCWSTR szColor);
+tflcColorGetBlue pflcColorGetBlue = 0;
+
+typedef int (LCAPI *tflcColorGetIndex)(LPCWSTR szColor, BOOL bLogicalEnabled);
+tflcColorGetIndex pflcColorGetIndex = 0;
+
+typedef BOOL (LCAPI *tflcColorToVal)(LPCWSTR szColor, int* pbRGB, int* pIndex, int* pR, int* pG, int* pB);
+tflcColorToVal pflcColorToVal = 0;
+
+typedef BOOL (LCAPI *tflcColorSetPalette)(int Index, int R, int G, int B);
+tflcColorSetPalette pflcColorSetPalette = 0;
+
+typedef BOOL (LCAPI *tflcColorGetPalette)(int Index, int* pR, int* pG, int* pB);
+tflcColorGetPalette pflcColorGetPalette = 0;
+
+typedef BOOL (LCAPI *tflcColorSavePalette)(LPCWSTR szFileName, HANDLE hWnd);
+tflcColorSavePalette pflcColorSavePalette = 0;
+
+typedef BOOL (LCAPI *tflcColorLoadPalette)(LPCWSTR szFileName, HANDLE hWnd);
+tflcColorLoadPalette pflcColorLoadPalette = 0;
+
+typedef BOOL (LCAPI *tflcImageSetPixelRGB)(HANDLE hImage, int X, int Y, int Red, int Green, int Blue);
+tflcImageSetPixelRGB pflcImageSetPixelRGB = 0;
+
+typedef BOOL (LCAPI *tflcImageSetPixelI)(HANDLE hImage, int X, int Y, int iColor);
+tflcImageSetPixelI pflcImageSetPixelI = 0;
+
+typedef BOOL (LCAPI *tflcImageGetPixelRGB)(HANDLE hImage, int X, int Y, int* pRed, int* pGreen, int* pBlue);
+tflcImageGetPixelRGB pflcImageGetPixelRGB = 0;
+
+typedef BOOL (LCAPI *tflcImageGetPixelI)(HANDLE hImage, int X, int Y, int* piColor);
+tflcImageGetPixelI pflcImageGetPixelI = 0;
+
+typedef BOOL (LCAPI *tflcImageSetPalColor)(HANDLE hImage, int iColor, int Red, int Green, int Blue);
+tflcImageSetPalColor pflcImageSetPalColor = 0;
+
+typedef BOOL (LCAPI *tflcImageGetPalColor)(HANDLE hImage, int iColor, int* pRed, int* pGreen, int* pBlue);
+tflcImageGetPalColor pflcImageGetPalColor = 0;
+
+typedef BOOL (LCAPI *tflcImageLoad)(HANDLE hImage, LPCWSTR szFilename, HANDLE hWnd);
+tflcImageLoad pflcImageLoad = 0;
+
+typedef BOOL (LCAPI *tflcImageLoadDIB)(HANDLE hImage, HANDLE hDib2);
+tflcImageLoadDIB pflcImageLoadDIB = 0;
+
+typedef BOOL (LCAPI *tflcImageLoadCamera)(HANDLE hImage);
+tflcImageLoadCamera pflcImageLoadCamera = 0;
+
+typedef BOOL (LCAPI *tflcImageCopyQuad)(HANDLE hImage, HANDLE hImageSrc, UINT W, UINT H, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3);
+tflcImageCopyQuad pflcImageCopyQuad = 0;
+
+typedef BOOL (LCAPI *tflcImageProc)(HANDLE hImage, int Mode);
+tflcImageProc pflcImageProc = 0;
+
+typedef int (LCAPI *tflcExpEntity)(HANDLE hEnt, int iChar, int Flags, BOOL bUnrotate);
+tflcExpEntity pflcExpEntity = 0;
+
+typedef int (LCAPI *tflcExpGetPline)(double Delta);
+tflcExpGetPline pflcExpGetPline = 0;
+
+typedef BOOL (LCAPI *tflcExpGetVertex)(double* pX, double* pY);
+tflcExpGetVertex pflcExpGetVertex = 0;
+
+typedef BOOL (LCAPI *tflcExpBlock)(HANDLE hBlock, F_LCEVENT pFunc, int Prm1, HANDLE Prm2);
+tflcExpBlock pflcExpBlock = 0;
+
+typedef BOOL (LCAPI *tflcGbrLoad)(HANDLE hLcWnd, LPCWSTR szFileName0);
+tflcGbrLoad pflcGbrLoad = 0;
+
+typedef BOOL (LCAPI *tflcGbrClose)(HANDLE hLcWnd);
+tflcGbrClose pflcGbrClose = 0;
+
+typedef LPCWSTR (LCAPI *tflcPlugGetOption)(LPCWSTR szFileName, LPCWSTR szKey);
+tflcPlugGetOption pflcPlugGetOption = 0;
+
+typedef BOOL (LCAPI *tflcPlugGetOption2)(LPCWSTR szFileName, LPCWSTR szKey);
+tflcPlugGetOption2 pflcPlugGetOption2 = 0;
+
+typedef BOOL (LCAPI *tflcPlugSetOption)(LPCWSTR szFileName, LPCWSTR szKey, LPCWSTR szValue, BOOL bSave);
+tflcPlugSetOption pflcPlugSetOption = 0;
+
+typedef int (LCAPI *tflcPrintSetup)(HANDLE hWnd);
+tflcPrintSetup pflcPrintSetup = 0;
+
+typedef BOOL (LCAPI *tflcPrintLayout)(HANDLE hBlock);
+tflcPrintLayout pflcPrintLayout = 0;
+
+typedef BOOL (LCAPI *tflcPrintBlock)(HANDLE hBlock, double X, double Y, double W, double H, double Scal, double PapLef, double PapTop, int Options);
+tflcPrintBlock pflcPrintBlock = 0;
+
+typedef HANDLE (LCAPI *tflcXDataBegin)();
+tflcXDataBegin pflcXDataBegin = 0;
+
+typedef int (LCAPI *tflcXDataEnd)(HANDLE hData);
+tflcXDataEnd pflcXDataEnd = 0;
+
+typedef BOOL (LCAPI *tflcXDataClear)(HANDLE hData);
+tflcXDataClear pflcXDataClear = 0;
+
+typedef BOOL (LCAPI *tflcXDataSet)(HANDLE hData);
+tflcXDataSet pflcXDataSet = 0;
+
+typedef BOOL (LCAPI *tflcWndTabClear)(HANDLE hLcWnd);
+tflcWndTabClear pflcWndTabClear = 0;
+
+typedef BOOL (LCAPI *tflcWndTabAdd)(HANDLE hLcWnd, int TabID, LPCWSTR szLabel, LPCWSTR szTipText, HANDLE hObject);
+tflcWndTabAdd pflcWndTabAdd = 0;
+
+typedef BOOL (LCAPI *tflcWndTabSelect)(HANDLE hLcWnd, int TabID);
+tflcWndTabSelect pflcWndTabSelect = 0;
+
+typedef BOOL (LCAPI *tflcWndPaperEnable)(HANDLE hLcWnd, BOOL bEnable);
+tflcWndPaperEnable pflcWndPaperEnable = 0;
+
+typedef BOOL (LCAPI *tflcWndPaperSetSize)(HANDLE hLcWnd, int Size, int Orient);
+tflcWndPaperSetSize pflcWndPaperSetSize = 0;
+
+typedef BOOL (LCAPI *tflcWndPaperSetSize2)(HANDLE hLcWnd, double Width, double Height);
+tflcWndPaperSetSize2 pflcWndPaperSetSize2 = 0;
+
+typedef BOOL (LCAPI *tflcWndPaperSetPos)(HANDLE hLcWnd, double Left, double Bottom);
+tflcWndPaperSetPos pflcWndPaperSetPos = 0;
+
+typedef BOOL (LCAPI *tflcGripClear)(HANDLE hLcWnd);
+tflcGripClear pflcGripClear = 0;
+
+typedef BOOL (LCAPI *tflcGripAdd)(HANDLE hLcWnd, HANDLE hObj, int iGrip, int Typ, double X, double Y, double Ang, double X0, double Y0);
+tflcGripAdd pflcGripAdd = 0;
+
+typedef BOOL (LCAPI *tflcGripSet)(HANDLE hLcWnd, HANDLE hObj, int iGrip, double X, double Y, double Ang, double X0, double Y0);
+tflcGripSet pflcGripSet = 0;
+
+typedef HANDLE (LCAPI *tflcPaint_PenCreate)(HANDLE hLcWnd, int Id, COLORREF Color, double Width, int PenStyle);
+tflcPaint_PenCreate pflcPaint_PenCreate = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PenSelect)(HANDLE hLcWnd, HANDLE hPen);
+tflcPaint_PenSelect pflcPaint_PenSelect = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PenSelectID)(HANDLE hLcWnd, int IdPen);
+tflcPaint_PenSelectID pflcPaint_PenSelectID = 0;
+
+typedef HANDLE (LCAPI *tflcPaint_BrushCreate)(HANDLE hLcWnd, int Id, COLORREF Color, int Pattern, int Alpha);
+tflcPaint_BrushCreate pflcPaint_BrushCreate = 0;
+
+typedef BOOL (LCAPI *tflcPaint_BrushSelect)(HANDLE hLcWnd, HANDLE hBrush);
+tflcPaint_BrushSelect pflcPaint_BrushSelect = 0;
+
+typedef BOOL (LCAPI *tflcPaint_BrushSelectID)(HANDLE hLcWnd, int IdBrush);
+tflcPaint_BrushSelectID pflcPaint_BrushSelectID = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawPtbuf)(HANDLE hLcWnd, HANDLE hPtbuf, BOOL bClosed);
+tflcPaint_DrawPtbuf pflcPaint_DrawPtbuf = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawMpgon)(HANDLE hLcWnd, HANDLE hMpgon, BOOL bFill, BOOL bBorder);
+tflcPaint_DrawMpgon pflcPaint_DrawMpgon = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawImage)(HANDLE hLcWnd, HANDLE hImage, double X, double Y, double PixelSize, int Transp, int TVal, HANDLE hPtbuf);
+tflcPaint_DrawImage pflcPaint_DrawImage = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawImage2)(HANDLE hLcWnd, HANDLE hImage, double X, double Y, double W, double H, int Transp, int TVal, HANDLE hPtbuf);
+tflcPaint_DrawImage2 pflcPaint_DrawImage2 = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawText)(HANDLE hLcWnd, double X, double Y, LPCWSTR szText);
+tflcPaint_DrawText pflcPaint_DrawText = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawText2)(HANDLE hLcWnd, double X1, double Y1, double X2, double Y2, int Align, LPCWSTR szText);
+tflcPaint_DrawText2 pflcPaint_DrawText2 = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawTextBC)(HANDLE hLcWnd, HANDLE hMpgon, double Gap, double Height, int Align, LPCWSTR szText);
+tflcPaint_DrawTextBC pflcPaint_DrawTextBC = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawArcText)(HANDLE hLcWnd, LPCWSTR szText, double X, double Y, double Rad, double Ang0, BOOL bCW, double H, double WScale, int Align);
+tflcPaint_DrawArcText pflcPaint_DrawArcText = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawHatch)(HANDLE hLcWnd, HANDLE hHatch);
+tflcPaint_DrawHatch pflcPaint_DrawHatch = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawPoint)(HANDLE hLcWnd, double X, double Y, int PtMode, double PtSize);
+tflcPaint_DrawPoint pflcPaint_DrawPoint = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawLine)(HANDLE hLcWnd, double X1, double Y1, double X2, double Y2);
+tflcPaint_DrawLine pflcPaint_DrawLine = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawXline)(HANDLE hLcWnd, double X, double Y, double Angle, BOOL bRay);
+tflcPaint_DrawXline pflcPaint_DrawXline = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawRect)(HANDLE hLcWnd, double Xc, double Yc, double Width, double Height);
+tflcPaint_DrawRect pflcPaint_DrawRect = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawRect2)(HANDLE hLcWnd, double X1, double Y1, double X2, double Y2);
+tflcPaint_DrawRect2 pflcPaint_DrawRect2 = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawPickBox)(HANDLE hLcWnd);
+tflcPaint_DrawPickBox pflcPaint_DrawPickBox = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawGrid)(HANDLE hLcWnd, HANDLE hGrid, BOOL bDest, COLORREF ColLine, COLORREF ColNode);
+tflcPaint_DrawGrid pflcPaint_DrawGrid = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DrawCPrompt)(HANDLE hLcWnd, int X, int Y, int Align, LPCWSTR szText);
+tflcPaint_DrawCPrompt pflcPaint_DrawCPrompt = 0;
+
+typedef void (LCAPI *tflcPaint_SetPixel)(HANDLE hDC, int X, int Y, COLORREF Color);
+tflcPaint_SetPixel pflcPaint_SetPixel = 0;
+
+typedef HANDLE (LCAPI *tflcPaint_CreatePtbuf)();
+tflcPaint_CreatePtbuf pflcPaint_CreatePtbuf = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DeletePtbuf)(HANDLE hPtbuf);
+tflcPaint_DeletePtbuf pflcPaint_DeletePtbuf = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufClear)(HANDLE hPtbuf);
+tflcPaint_PtbufClear pflcPaint_PtbufClear = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddPoint)(HANDLE hPtbuf, double X, double Y, double Prm1, double Prm2, int IntPrm);
+tflcPaint_PtbufAddPoint pflcPaint_PtbufAddPoint = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddPoint2)(HANDLE hPtbuf, double X, double Y);
+tflcPaint_PtbufAddPoint2 pflcPaint_PtbufAddPoint2 = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddPointP)(HANDLE hPtbuf, double Angle, double Dist);
+tflcPaint_PtbufAddPointP pflcPaint_PtbufAddPointP = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddLine)(HANDLE hPtbuf, double X1, double Y1, double X2, double Y2);
+tflcPaint_PtbufAddLine pflcPaint_PtbufAddLine = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddLineP)(HANDLE hPtbuf, double X, double Y, double Angle, double Dist);
+tflcPaint_PtbufAddLineP pflcPaint_PtbufAddLineP = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddCircle)(HANDLE hPtbuf, double Xc, double Yc, double R, int Resol);
+tflcPaint_PtbufAddCircle pflcPaint_PtbufAddCircle = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddCircle2)(HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, int Resol);
+tflcPaint_PtbufAddCircle2 pflcPaint_PtbufAddCircle2 = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddCircle3)(HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, double X3, double Y3, BOOL bInside, int Resol);
+tflcPaint_PtbufAddCircle3 pflcPaint_PtbufAddCircle3 = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArc)(HANDLE hPtbuf, double Xc, double Yc, double R, double StartAngle, double ArcAngle, int Resol);
+tflcPaint_PtbufAddArc pflcPaint_PtbufAddArc = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArc3p)(HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, double X3, double Y3, int Resol);
+tflcPaint_PtbufAddArc3p pflcPaint_PtbufAddArc3p = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArcSDE)(HANDLE hPtbuf, double Xs, double Ys, double DirAng, double Xe, double Ye, int Resol);
+tflcPaint_PtbufAddArcSDE pflcPaint_PtbufAddArcSDE = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArcSDAR)(HANDLE hPtbuf, double Xs, double Ys, double DirAng, double AngArc, double R, int Resol);
+tflcPaint_PtbufAddArcSDAR pflcPaint_PtbufAddArcSDAR = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArcSER)(HANDLE hPtbuf, double Xs, double Ys, double Xe, double Ye, double Radius, BOOL bClockwise, int Resol);
+tflcPaint_PtbufAddArcSER pflcPaint_PtbufAddArcSER = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArcSEL)(HANDLE hPtbuf, double Xs, double Ys, double Xe, double Ye, double ArcLen, BOOL bClockwise, int Resol);
+tflcPaint_PtbufAddArcSEL pflcPaint_PtbufAddArcSEL = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArcSEA)(HANDLE hPtbuf, double Xs, double Ys, double Xe, double Ye, double AngArc, int Resol);
+tflcPaint_PtbufAddArcSEA pflcPaint_PtbufAddArcSEA = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArcSEB)(HANDLE hPtbuf, double Xs, double Ys, double Xe, double Ye, double Bulge, int Resol);
+tflcPaint_PtbufAddArcSEB pflcPaint_PtbufAddArcSEB = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArcCSE)(HANDLE hPtbuf, double Xc, double Yc, double Xs, double Ys, double Xe, double Ye, BOOL bClockwise, int Resol);
+tflcPaint_PtbufAddArcCSE pflcPaint_PtbufAddArcCSE = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArcCSA)(HANDLE hPtbuf, double Xc, double Yc, double Xs, double Ys, double AngArc, int Resol);
+tflcPaint_PtbufAddArcCSA pflcPaint_PtbufAddArcCSA = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArcCSL)(HANDLE hPtbuf, double Xc, double Yc, double Xs, double Ys, double ChordLen, BOOL bClockwise, int Resol);
+tflcPaint_PtbufAddArcCSL pflcPaint_PtbufAddArcCSL = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddArcCRAA)(HANDLE hPtbuf, double Xc, double Yc, double R, double AngStart, double AngEnd, BOOL bClockwise, int Resol);
+tflcPaint_PtbufAddArcCRAA pflcPaint_PtbufAddArcCRAA = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddEllipse)(HANDLE hPtbuf, double Xc, double Yc, double Rmaj, double Rmin, double RotAng, double StartAng, double ArcAng, int Resol);
+tflcPaint_PtbufAddEllipse pflcPaint_PtbufAddEllipse = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddEllipse2)(HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, int Resol);
+tflcPaint_PtbufAddEllipse2 pflcPaint_PtbufAddEllipse2 = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddRect)(HANDLE hPtbuf, double Xc, double Yc, double W, double H, double Angle, double R, int Resol);
+tflcPaint_PtbufAddRect pflcPaint_PtbufAddRect = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddRect2)(HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, double R, int Resol);
+tflcPaint_PtbufAddRect2 pflcPaint_PtbufAddRect2 = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddRect3)(HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, double W, int Align, double R, int Resol);
+tflcPaint_PtbufAddRect3 pflcPaint_PtbufAddRect3 = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddWline)(HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, double W, int Align, BOOL bArc, int Resol);
+tflcPaint_PtbufAddWline pflcPaint_PtbufAddWline = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufAddPtbuf)(HANDLE hPtbuf, HANDLE hPtbuf2);
+tflcPaint_PtbufAddPtbuf pflcPaint_PtbufAddPtbuf = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufGetPoint)(HANDLE hPtbuf, int Mode, double* pX, double* pY);
+tflcPaint_PtbufGetPoint pflcPaint_PtbufGetPoint = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufGetPoint2)(HANDLE hPtbuf, int Mode, double* pX, double* pY, double* pPrm1, double* pPrm2, int* pIntPrm);
+tflcPaint_PtbufGetPoint2 pflcPaint_PtbufGetPoint2 = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufInterpolate)(HANDLE hPtbuf, BOOL bClosed, HANDLE hPtbufDest, int Mode, int Resol);
+tflcPaint_PtbufInterpolate pflcPaint_PtbufInterpolate = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufMove)(HANDLE hPtbuf, double dx, double dy);
+tflcPaint_PtbufMove pflcPaint_PtbufMove = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufRotate)(HANDLE hPtbuf, double Xc, double Yc, double Angle);
+tflcPaint_PtbufRotate pflcPaint_PtbufRotate = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufScale)(HANDLE hPtbuf, double Xc, double Yc, double ScaleX, double ScaleY);
+tflcPaint_PtbufScale pflcPaint_PtbufScale = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufMirror)(HANDLE hPtbuf, double X1, double Y1, double X2, double Y2);
+tflcPaint_PtbufMirror pflcPaint_PtbufMirror = 0;
+
+typedef BOOL (LCAPI *tflcPaint_PtbufCopy)(HANDLE hPtbuf, HANDLE hPtbufDest);
+tflcPaint_PtbufCopy pflcPaint_PtbufCopy = 0;
+
+typedef HANDLE (LCAPI *tflcPaint_CreateMpgon)();
+tflcPaint_CreateMpgon pflcPaint_CreateMpgon = 0;
+
+typedef BOOL (LCAPI *tflcPaint_DeleteMpgon)(HANDLE hMpgon);
+tflcPaint_DeleteMpgon pflcPaint_DeleteMpgon = 0;
+
+typedef BOOL (LCAPI *tflcPaint_MpgonClear)(HANDLE hMpgon);
+tflcPaint_MpgonClear pflcPaint_MpgonClear = 0;
+
+typedef BOOL (LCAPI *tflcPaint_MpgonAddPgon)(HANDLE hMpgon, HANDLE hPtbuf);
+tflcPaint_MpgonAddPgon pflcPaint_MpgonAddPgon = 0;
+
+typedef BOOL (LCAPI *tflcPaint_MpgonAddText)(HANDLE hMpgon, HANDLE hFont, double X, double Y, LPCWSTR szText, int Resol);
+tflcPaint_MpgonAddText pflcPaint_MpgonAddText = 0;
+
+typedef BOOL (LCAPI *tflcPaint_MpgonAddBarcode)(HANDLE hMpgon, int BarType, double Xc, double Yc, double Width, double Height, LPCWSTR szText);
+tflcPaint_MpgonAddBarcode pflcPaint_MpgonAddBarcode = 0;
+
+typedef BOOL (LCAPI *tflcPaint_MpgonMove)(HANDLE hMpgon, double dx, double dy);
+tflcPaint_MpgonMove pflcPaint_MpgonMove = 0;
+
+typedef BOOL (LCAPI *tflcPaint_MpgonRotate)(HANDLE hMpgon, double Xc, double Yc, double Angle);
+tflcPaint_MpgonRotate pflcPaint_MpgonRotate = 0;
+
+typedef BOOL (LCAPI *tflcPaint_MpgonScale)(HANDLE hMpgon, double Xc, double Yc, double ScaleX, double ScaleY);
+tflcPaint_MpgonScale pflcPaint_MpgonScale = 0;
+
+typedef BOOL (LCAPI *tflcPaint_MpgonMirror)(HANDLE hMpgon, double X1, double Y1, double X2, double Y2);
+tflcPaint_MpgonMirror pflcPaint_MpgonMirror = 0;
+
+typedef BOOL (LCAPI *tflcPaint_MpgonCopy)(HANDLE hMpgon, HANDLE hMpgonDest);
+tflcPaint_MpgonCopy pflcPaint_MpgonCopy = 0;
+
+typedef BOOL (LCAPI *tflcPaint_HatchGen)(HANDLE hMpgon, HANDLE hHatch, double Dist, double Angle, double Gap);
+tflcPaint_HatchGen pflcPaint_HatchGen = 0;
+
+typedef HANDLE (LCAPI *tflcPaint_ImageAdd)(int Id);
+tflcPaint_ImageAdd pflcPaint_ImageAdd = 0;
+
+typedef BOOL (LCAPI *tflcPaint_ImageDelete)(HANDLE hImage);
+tflcPaint_ImageDelete pflcPaint_ImageDelete = 0;
+
+typedef HANDLE (LCAPI *tflcPaint_ImageGetFirst)();
+tflcPaint_ImageGetFirst pflcPaint_ImageGetFirst = 0;
+
+typedef HANDLE (LCAPI *tflcPaint_ImageGetNext)(HANDLE hImage);
+tflcPaint_ImageGetNext pflcPaint_ImageGetNext = 0;
+
+typedef HANDLE (LCAPI *tflcPaint_ImageGetByID)(int Id);
+tflcPaint_ImageGetByID pflcPaint_ImageGetByID = 0;
+
+typedef BOOL (LCAPI *tflcPaint_ImageLoad)(HANDLE hImage, LPCWSTR szFileName);
+tflcPaint_ImageLoad pflcPaint_ImageLoad = 0;
+
+typedef BOOL (LCAPI *tflcPaint_ImageCopy)(HANDLE hImage, HANDLE hImageDest);
+tflcPaint_ImageCopy pflcPaint_ImageCopy = 0;
+
+typedef BOOL (LCAPI *tflcPaint_ImageCreate)(HANDLE hImage, int Width, int Height);
+tflcPaint_ImageCreate pflcPaint_ImageCreate = 0;
+
+typedef BOOL (LCAPI *tflcPaint_ImageSetPixel)(HANDLE hImage, int X, int Y, int R, int G, int B);
+tflcPaint_ImageSetPixel pflcPaint_ImageSetPixel = 0;
+
+typedef BOOL (LCAPI *tflcPaint_ImageFlip)(HANDLE hImage, BOOL bHor, BOOL bVert);
+tflcPaint_ImageFlip pflcPaint_ImageFlip = 0;
+
+typedef BOOL (LCAPI *tflcPaint_ImageRotate)(HANDLE hImage, double Angle);
+tflcPaint_ImageRotate pflcPaint_ImageRotate = 0;
+
+typedef BOOL (LCAPI *tflcPaint_ImageGray)(HANDLE hImage);
+tflcPaint_ImageGray pflcPaint_ImageGray = 0;
+
+typedef BOOL (LCAPI *tflcPaint_ImageResize)(HANDLE hImage, int NewWidth, int NewHeight, int ResizeFilter);
+tflcPaint_ImageResize pflcPaint_ImageResize = 0;
+
+typedef HANDLE (LCAPI *tflcPaint_ImageGetPtbuf)(HANDLE hImage, double RotAngle);
+tflcPaint_ImageGetPtbuf pflcPaint_ImageGetPtbuf = 0;
+
+typedef HANDLE (LCAPI *tflcPaint_FontOpenLC)(LPCWSTR szFontName);
+tflcPaint_FontOpenLC pflcPaint_FontOpenLC = 0;
+
+typedef HANDLE (LCAPI *tflcPaint_FontOpenTT)(LPCWSTR szFontName, BOOL bBold, BOOL bItalic);
+tflcPaint_FontOpenTT pflcPaint_FontOpenTT = 0;
+
+typedef BOOL (LCAPI *tflcPaint_FontClose)(HANDLE hFont);
+tflcPaint_FontClose pflcPaint_FontClose = 0;
+
+typedef BOOL (LCAPI *tflcPaint_FontSelect)(HANDLE hLcWnd, HANDLE hFont);
+tflcPaint_FontSelect pflcPaint_FontSelect = 0;
+
 
 static HINSTANCE ghLibInst=0;
 
-BOOL lcLoadLib()
+//-------------------------------------------------
+BOOL SetProcAddr ()
 {
-  ghLibInst = LoadLibraryA( "litecad.dll" );
-  return (ghLibInst)? TRUE : FALSE;
+  char* szFuncName;
+  szFuncName = "lcEventSetProc";
+  pflcEventSetProc = (tflcEventSetProc)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEventSetProc == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEventReturnCode";
+  pflcEventReturnCode = (tflcEventReturnCode)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEventReturnCode == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEventsEnable";
+  pflcEventsEnable = (tflcEventsEnable)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEventsEnable == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcInitialize";
+  pflcInitialize = (tflcInitialize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcInitialize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcUninitialize";
+  pflcUninitialize = (tflcUninitialize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcUninitialize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcStrAdd";
+  pflcStrAdd = (tflcStrAdd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcStrAdd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcStrSet";
+  pflcStrSet = (tflcStrSet)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcStrSet == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcStrGet";
+  pflcStrGet = (tflcStrGet)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcStrGet == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcStrFileLoad";
+  pflcStrFileLoad = (tflcStrFileLoad)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcStrFileLoad == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcStrFileSave";
+  pflcStrFileSave = (tflcStrFileSave)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcStrFileSave == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropGetBool";
+  pflcPropGetBool = (tflcPropGetBool)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropGetBool == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropGetInt";
+  pflcPropGetInt = (tflcPropGetInt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropGetInt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropGetFloat";
+  pflcPropGetFloat = (tflcPropGetFloat)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropGetFloat == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropGetStr";
+  pflcPropGetStr = (tflcPropGetStr)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropGetStr == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropGetStrA";
+  pflcPropGetStrA = (tflcPropGetStrA)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropGetStrA == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropGetStr2";
+  pflcPropGetStr2 = (tflcPropGetStr2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropGetStr2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropGetChar";
+  pflcPropGetChar = (tflcPropGetChar)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropGetChar == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropGetHandle";
+  pflcPropGetHandle = (tflcPropGetHandle)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropGetHandle == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropPutBool";
+  pflcPropPutBool = (tflcPropPutBool)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropPutBool == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropPutInt";
+  pflcPropPutInt = (tflcPropPutInt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropPutInt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropPutFloat";
+  pflcPropPutFloat = (tflcPropPutFloat)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropPutFloat == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropPutStr";
+  pflcPropPutStr = (tflcPropPutStr)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropPutStr == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropPutHandle";
+  pflcPropPutHandle = (tflcPropPutHandle)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropPutHandle == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCreateWindow";
+  pflcCreateWindow = (tflcCreateWindow)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCreateWindow == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDeleteWindow";
+  pflcDeleteWindow = (tflcDeleteWindow)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDeleteWindow == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndOnClose";
+  pflcWndOnClose = (tflcWndOnClose)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndOnClose == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndExeCommand";
+  pflcWndExeCommand = (tflcWndExeCommand)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndExeCommand == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndExitCommand";
+  pflcWndExitCommand = (tflcWndExitCommand)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndExitCommand == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndResize";
+  pflcWndResize = (tflcWndResize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndResize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndRedraw";
+  pflcWndRedraw = (tflcWndRedraw)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndRedraw == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndRedrawAuto";
+  pflcWndRedrawAuto = (tflcWndRedrawAuto)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndRedrawAuto == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndSetFocus";
+  pflcWndSetFocus = (tflcWndSetFocus)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndSetFocus == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndSetExtents";
+  pflcWndSetExtents = (tflcWndSetExtents)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndSetExtents == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndSetBlock";
+  pflcWndSetBlock = (tflcWndSetBlock)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndSetBlock == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndSetProps";
+  pflcWndSetProps = (tflcWndSetProps)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndSetProps == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndSetCmdwin";
+  pflcWndSetCmdwin = (tflcWndSetCmdwin)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndSetCmdwin == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndSetBasePoint";
+  pflcWndSetBasePoint = (tflcWndSetBasePoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndSetBasePoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndEmulator";
+  pflcWndEmulator = (tflcWndEmulator)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndEmulator == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndMagnifier";
+  pflcWndMagnifier = (tflcWndMagnifier)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndMagnifier == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndHoverText";
+  pflcWndHoverText = (tflcWndHoverText)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndHoverText == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndMessage";
+  pflcWndMessage = (tflcWndMessage)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndMessage == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndWaitPoint";
+  pflcWndWaitPoint = (tflcWndWaitPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndWaitPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndWaitPoint2";
+  pflcWndWaitPoint2 = (tflcWndWaitPoint2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndWaitPoint2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndInputStr";
+  pflcWndInputStr = (tflcWndInputStr)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndInputStr == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndUpdate";
+  pflcWndUpdate = (tflcWndUpdate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndUpdate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndDrwAdd";
+  pflcWndDrwAdd = (tflcWndDrwAdd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndDrwAdd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndDrwDelete";
+  pflcWndDrwDelete = (tflcWndDrwDelete)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndDrwDelete == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndDrwGet";
+  pflcWndDrwGet = (tflcWndDrwGet)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndDrwGet == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndZoomRect";
+  pflcWndZoomRect = (tflcWndZoomRect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndZoomRect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndZoomScale";
+  pflcWndZoomScale = (tflcWndZoomScale)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndZoomScale == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndZoomMove";
+  pflcWndZoomMove = (tflcWndZoomMove)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndZoomMove == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndZoomPos";
+  pflcWndZoomPos = (tflcWndZoomPos)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndZoomPos == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndZoomEnt";
+  pflcWndZoomEnt = (tflcWndZoomEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndZoomEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndGetCursorCoord";
+  pflcWndGetCursorCoord = (tflcWndGetCursorCoord)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndGetCursorCoord == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCoordDrwToWnd";
+  pflcCoordDrwToWnd = (tflcCoordDrwToWnd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCoordDrwToWnd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCoordWndToDrw";
+  pflcCoordWndToDrw = (tflcCoordWndToDrw)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCoordWndToDrw == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndCoordFromDrw";
+  pflcWndCoordFromDrw = (tflcWndCoordFromDrw)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndCoordFromDrw == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndCoordToDrw";
+  pflcWndCoordToDrw = (tflcWndCoordToDrw)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndCoordToDrw == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndGetEntByPoint";
+  pflcWndGetEntByPoint = (tflcWndGetEntByPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndGetEntByPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndGetEntByPoint2";
+  pflcWndGetEntByPoint2 = (tflcWndGetEntByPoint2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndGetEntByPoint2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndGetEntsByPoint";
+  pflcWndGetEntsByPoint = (tflcWndGetEntsByPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndGetEntsByPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndGetEntsByRect";
+  pflcWndGetEntsByRect = (tflcWndGetEntsByRect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndGetEntsByRect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndGetEntity";
+  pflcWndGetEntity = (tflcWndGetEntity)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndGetEntity == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndGetEntByID";
+  pflcWndGetEntByID = (tflcWndGetEntByID)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndGetEntByID == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndGetEntByIDH";
+  pflcWndGetEntByIDH = (tflcWndGetEntByIDH)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndGetEntByIDH == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndGetEntByKey";
+  pflcWndGetEntByKey = (tflcWndGetEntByKey)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndGetEntByKey == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndPickEnt";
+  pflcWndPickEnt = (tflcWndPickEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndPickEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFontGetFirst";
+  pflcFontGetFirst = (tflcFontGetFirst)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFontGetFirst == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFontGetNext";
+  pflcFontGetNext = (tflcFontGetNext)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFontGetNext == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFontAddRes";
+  pflcFontAddRes = (tflcFontAddRes)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFontAddRes == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFontAddFile";
+  pflcFontAddFile = (tflcFontAddFile)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFontAddFile == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFontAddBin";
+  pflcFontAddBin = (tflcFontAddBin)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFontAddBin == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFontGetChar";
+  pflcFontGetChar = (tflcFontGetChar)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFontGetChar == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFontGetName";
+  pflcFontGetName = (tflcFontGetName)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFontGetName == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcProgressCreate";
+  pflcProgressCreate = (tflcProgressCreate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcProgressCreate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcProgressSetText";
+  pflcProgressSetText = (tflcProgressSetText)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcProgressSetText == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcProgressStart";
+  pflcProgressStart = (tflcProgressStart)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcProgressStart == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcProgressSetPos";
+  pflcProgressSetPos = (tflcProgressSetPos)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcProgressSetPos == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcProgressInc";
+  pflcProgressInc = (tflcProgressInc)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcProgressInc == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcProgressDelete";
+  pflcProgressDelete = (tflcProgressDelete)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcProgressDelete == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcQuadCreate";
+  pflcQuadCreate = (tflcQuadCreate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcQuadCreate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcQuadDelete";
+  pflcQuadDelete = (tflcQuadDelete)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcQuadDelete == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcQuadSet";
+  pflcQuadSet = (tflcQuadSet)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcQuadSet == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcQuadTransXYtoUV";
+  pflcQuadTransXYtoUV = (tflcQuadTransXYtoUV)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcQuadTransXYtoUV == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcQuadTransUVtoXY";
+  pflcQuadTransUVtoXY = (tflcQuadTransUVtoXY)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcQuadTransUVtoXY == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcQuadContains";
+  pflcQuadContains = (tflcQuadContains)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcQuadContains == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGridCreate";
+  pflcGridCreate = (tflcGridCreate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGridCreate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGridDelete";
+  pflcGridDelete = (tflcGridDelete)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGridDelete == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGridSet";
+  pflcGridSet = (tflcGridSet)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGridSet == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGridSetDest";
+  pflcGridSetDest = (tflcGridSetDest)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGridSetDest == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGridUpdate";
+  pflcGridUpdate = (tflcGridUpdate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGridUpdate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGridTrans";
+  pflcGridTrans = (tflcGridTrans)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGridTrans == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGridGetNode";
+  pflcGridGetNode = (tflcGridGetNode)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGridGetNode == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGridGetCell";
+  pflcGridGetCell = (tflcGridGetCell)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGridGetCell == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGridSetView";
+  pflcGridSetView = (tflcGridSetView)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGridSetView == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCreateCmdwin";
+  pflcCreateCmdwin = (tflcCreateCmdwin)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCreateCmdwin == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCmdwinResize";
+  pflcCmdwinResize = (tflcCmdwinResize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCmdwinResize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCmdwinUpdate";
+  pflcCmdwinUpdate = (tflcCmdwinUpdate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCmdwinUpdate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCreateProps";
+  pflcCreateProps = (tflcCreateProps)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCreateProps == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDeleteProps";
+  pflcDeleteProps = (tflcDeleteProps)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDeleteProps == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropsResize";
+  pflcPropsResize = (tflcPropsResize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropsResize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPropsUpdate";
+  pflcPropsUpdate = (tflcPropsUpdate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPropsUpdate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCreateStatbar";
+  pflcCreateStatbar = (tflcCreateStatbar)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCreateStatbar == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDeleteStatbar";
+  pflcDeleteStatbar = (tflcDeleteStatbar)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDeleteStatbar == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcStatbarResize";
+  pflcStatbarResize = (tflcStatbarResize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcStatbarResize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcStatbarCell";
+  pflcStatbarCell = (tflcStatbarCell)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcStatbarCell == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcStatbarText";
+  pflcStatbarText = (tflcStatbarText)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcStatbarText == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcStatbarRedraw";
+  pflcStatbarRedraw = (tflcStatbarRedraw)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcStatbarRedraw == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDgGetValue";
+  pflcDgGetValue = (tflcDgGetValue)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDgGetValue == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHelp";
+  pflcHelp = (tflcHelp)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHelp == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGetPolarPoint";
+  pflcGetPolarPoint = (tflcGetPolarPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGetPolarPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGetPolarPrm";
+  pflcGetPolarPrm = (tflcGetPolarPrm)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGetPolarPrm == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGetClientSize";
+  pflcGetClientSize = (tflcGetClientSize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGetClientSize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGetErrorCode";
+  pflcGetErrorCode = (tflcGetErrorCode)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGetErrorCode == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGetErrorStr";
+  pflcGetErrorStr = (tflcGetErrorStr)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGetErrorStr == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGetStr";
+  pflcGetStr = (tflcGetStr)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGetStr == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGetDrwXData";
+  pflcGetDrwXData = (tflcGetDrwXData)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGetDrwXData == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGetDrwPreview";
+  pflcGetDrwPreview = (tflcGetDrwPreview)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGetDrwPreview == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFilletSetLines";
+  pflcFilletSetLines = (tflcFilletSetLines)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFilletSetLines == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFillet";
+  pflcFillet = (tflcFillet)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFillet == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFilletGetPoint";
+  pflcFilletGetPoint = (tflcFilletGetPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFilletGetPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFileToStrA";
+  pflcFileToStrA = (tflcFileToStrA)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFileToStrA == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCreateCommand";
+  pflcCreateCommand = (tflcCreateCommand)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCreateCommand == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCmdExit";
+  pflcCmdExit = (tflcCmdExit)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCmdExit == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCmdCursorText";
+  pflcCmdCursorText = (tflcCmdCursorText)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCmdCursorText == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCmdMessage";
+  pflcCmdMessage = (tflcCmdMessage)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCmdMessage == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCmdResetLastPt";
+  pflcCmdResetLastPt = (tflcCmdResetLastPt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCmdResetLastPt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIS_InitLibrary";
+  pflcTIS_InitLibrary = (tflcTIS_InitLibrary)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIS_InitLibrary == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIS_CloseLibrary";
+  pflcTIS_CloseLibrary = (tflcTIS_CloseLibrary)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIS_CloseLibrary == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCameraConnect";
+  pflcCameraConnect = (tflcCameraConnect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCameraConnect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCameraDisconnect";
+  pflcCameraDisconnect = (tflcCameraDisconnect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCameraDisconnect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCameraShot";
+  pflcCameraShot = (tflcCameraShot)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCameraShot == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCreateDrawing";
+  pflcCreateDrawing = (tflcCreateDrawing)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCreateDrawing == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDeleteDrawing";
+  pflcDeleteDrawing = (tflcDeleteDrawing)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDeleteDrawing == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwNew";
+  pflcDrwNew = (tflcDrwNew)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwNew == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwLoad";
+  pflcDrwLoad = (tflcDrwLoad)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwLoad == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwLoadMem";
+  pflcDrwLoadMem = (tflcDrwLoadMem)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwLoadMem == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDxfLoadMem";
+  pflcDxfLoadMem = (tflcDxfLoadMem)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDxfLoadMem == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwLoadTIN";
+  pflcDrwLoadTIN = (tflcDrwLoadTIN)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwLoadTIN == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwSaveTIN";
+  pflcDrwSaveTIN = (tflcDrwSaveTIN)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwSaveTIN == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwInsert";
+  pflcDrwInsert = (tflcDrwInsert)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwInsert == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwInsertSHP";
+  pflcDrwInsertSHP = (tflcDrwInsertSHP)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwInsertSHP == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwCopy";
+  pflcDrwCopy = (tflcDrwCopy)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwCopy == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwSave";
+  pflcDrwSave = (tflcDrwSave)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwSave == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwSaveMem";
+  pflcDrwSaveMem = (tflcDrwSaveMem)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwSaveMem == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddLayer";
+  pflcDrwAddLayer = (tflcDrwAddLayer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddLayer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddLayer2";
+  pflcDrwAddLayer2 = (tflcDrwAddLayer2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddLayer2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddLinetype";
+  pflcDrwAddLinetype = (tflcDrwAddLinetype)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddLinetype == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddLinetypeF";
+  pflcDrwAddLinetypeF = (tflcDrwAddLinetypeF)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddLinetypeF == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddTextStyle";
+  pflcDrwAddTextStyle = (tflcDrwAddTextStyle)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddTextStyle == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddDimStyle";
+  pflcDrwAddDimStyle = (tflcDrwAddDimStyle)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddDimStyle == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddMlineStyle";
+  pflcDrwAddMlineStyle = (tflcDrwAddMlineStyle)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddMlineStyle == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddPntStyle";
+  pflcDrwAddPntStyle = (tflcDrwAddPntStyle)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddPntStyle == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddFilling";
+  pflcDrwAddFilling = (tflcDrwAddFilling)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddFilling == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddImage";
+  pflcDrwAddImage = (tflcDrwAddImage)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddImage == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddImage2";
+  pflcDrwAddImage2 = (tflcDrwAddImage2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddImage2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddImage3";
+  pflcDrwAddImage3 = (tflcDrwAddImage3)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddImage3 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddImageCam";
+  pflcDrwAddImageCam = (tflcDrwAddImageCam)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddImageCam == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddBlock";
+  pflcDrwAddBlock = (tflcDrwAddBlock)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddBlock == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddBlockFromFile";
+  pflcDrwAddBlockFromFile = (tflcDrwAddBlockFromFile)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddBlockFromFile == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddBlockFromDrw";
+  pflcDrwAddBlockFromDrw = (tflcDrwAddBlockFromDrw)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddBlockFromDrw == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddBlockFile";
+  pflcDrwAddBlockFile = (tflcDrwAddBlockFile)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddBlockFile == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddBlockPaper";
+  pflcDrwAddBlockPaper = (tflcDrwAddBlockPaper)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddBlockPaper == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwAddBlockCopy";
+  pflcDrwAddBlockCopy = (tflcDrwAddBlockCopy)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwAddBlockCopy == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwDeleteObject";
+  pflcDrwDeleteObject = (tflcDrwDeleteObject)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwDeleteObject == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwDeleteUnused";
+  pflcDrwDeleteUnused = (tflcDrwDeleteUnused)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwDeleteUnused == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwCountObjects";
+  pflcDrwCountObjects = (tflcDrwCountObjects)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwCountObjects == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwSortObjects";
+  pflcDrwSortObjects = (tflcDrwSortObjects)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwSortObjects == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwUpdateWinFonts";
+  pflcDrwUpdateWinFonts = (tflcDrwUpdateWinFonts)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwUpdateWinFonts == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwUpdateBlkRefs";
+  pflcDrwUpdateBlkRefs = (tflcDrwUpdateBlkRefs)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwUpdateBlkRefs == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwUpdateTexts";
+  pflcDrwUpdateTexts = (tflcDrwUpdateTexts)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwUpdateTexts == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwGetFirstObject";
+  pflcDrwGetFirstObject = (tflcDrwGetFirstObject)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwGetFirstObject == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwGetNextObject";
+  pflcDrwGetNextObject = (tflcDrwGetNextObject)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwGetNextObject == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwGetObjectByID";
+  pflcDrwGetObjectByID = (tflcDrwGetObjectByID)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwGetObjectByID == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwGetObjectByIDH";
+  pflcDrwGetObjectByIDH = (tflcDrwGetObjectByIDH)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwGetObjectByIDH == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwGetObjectByName";
+  pflcDrwGetObjectByName = (tflcDrwGetObjectByName)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwGetObjectByName == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwGetEntByID";
+  pflcDrwGetEntByID = (tflcDrwGetEntByID)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwGetEntByID == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwGetEntByIDH";
+  pflcDrwGetEntByIDH = (tflcDrwGetEntByIDH)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwGetEntByIDH == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwGetEntByKey";
+  pflcDrwGetEntByKey = (tflcDrwGetEntByKey)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwGetEntByKey == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwClearXData";
+  pflcDrwClearXData = (tflcDrwClearXData)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwClearXData == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwPurge";
+  pflcDrwPurge = (tflcDrwPurge)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwPurge == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwExplode";
+  pflcDrwExplode = (tflcDrwExplode)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwExplode == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwSetLimits";
+  pflcDrwSetLimits = (tflcDrwSetLimits)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwSetLimits == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwUndoRecord";
+  pflcDrwUndoRecord = (tflcDrwUndoRecord)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwUndoRecord == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcDrwUndo";
+  pflcDrwUndo = (tflcDrwUndo)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcDrwUndo == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCRectsClear";
+  pflcCRectsClear = (tflcCRectsClear)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCRectsClear == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCRectsAdd";
+  pflcCRectsAdd = (tflcCRectsAdd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCRectsAdd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCRectsDivide";
+  pflcCRectsDivide = (tflcCRectsDivide)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCRectsDivide == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCRectsGetFirst";
+  pflcCRectsGetFirst = (tflcCRectsGetFirst)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCRectsGetFirst == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCRectsGetNext";
+  pflcCRectsGetNext = (tflcCRectsGetNext)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCRectsGetNext == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCRectsGetWithID";
+  pflcCRectsGetWithID = (tflcCRectsGetWithID)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCRectsGetWithID == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCRectsActive";
+  pflcCRectsActive = (tflcCRectsActive)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCRectsActive == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCRectsGetActive";
+  pflcCRectsGetActive = (tflcCRectsGetActive)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCRectsGetActive == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCRectsDelete";
+  pflcCRectsDelete = (tflcCRectsDelete)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCRectsDelete == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCRectsSave";
+  pflcCRectsSave = (tflcCRectsSave)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCRectsSave == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcCRectsBitmap";
+  pflcCRectsBitmap = (tflcCRectsBitmap)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcCRectsBitmap == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSetViewRect";
+  pflcBlockSetViewRect = (tflcBlockSetViewRect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSetViewRect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSetViewRect2";
+  pflcBlockSetViewRect2 = (tflcBlockSetViewRect2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSetViewRect2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSetPaperSize";
+  pflcBlockSetPaperSize = (tflcBlockSetPaperSize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSetPaperSize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockRasterize";
+  pflcBlockRasterize = (tflcBlockRasterize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockRasterize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockRasterizeMem";
+  pflcBlockRasterizeMem = (tflcBlockRasterizeMem)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockRasterizeMem == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockUpdate";
+  pflcBlockUpdate = (tflcBlockUpdate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockUpdate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockMove";
+  pflcBlockMove = (tflcBlockMove)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockMove == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockScale";
+  pflcBlockScale = (tflcBlockScale)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockScale == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockRotate";
+  pflcBlockRotate = (tflcBlockRotate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockRotate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockMirror";
+  pflcBlockMirror = (tflcBlockMirror)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockMirror == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockClear";
+  pflcBlockClear = (tflcBlockClear)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockClear == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockPurge";
+  pflcBlockPurge = (tflcBlockPurge)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockPurge == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSortEnts";
+  pflcBlockSortEnts = (tflcBlockSortEnts)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSortEnts == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSortEnts2";
+  pflcBlockSortEnts2 = (tflcBlockSortEnts2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSortEnts2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddPoint";
+  pflcBlockAddPoint = (tflcBlockAddPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddPoint2";
+  pflcBlockAddPoint2 = (tflcBlockAddPoint2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddPoint2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddPoint3d";
+  pflcBlockAddPoint3d = (tflcBlockAddPoint3d)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddPoint3d == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddPointsF";
+  pflcBlockAddPointsF = (tflcBlockAddPointsF)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddPointsF == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddXline";
+  pflcBlockAddXline = (tflcBlockAddXline)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddXline == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddXline2P";
+  pflcBlockAddXline2P = (tflcBlockAddXline2P)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddXline2P == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddLine";
+  pflcBlockAddLine = (tflcBlockAddLine)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddLine == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddLineDir";
+  pflcBlockAddLineDir = (tflcBlockAddLineDir)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddLineDir == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddLineTan";
+  pflcBlockAddLineTan = (tflcBlockAddLineTan)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddLineTan == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddPolyline";
+  pflcBlockAddPolyline = (tflcBlockAddPolyline)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddPolyline == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddRPolygon";
+  pflcBlockAddRPolygon = (tflcBlockAddRPolygon)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddRPolygon == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddSpline";
+  pflcBlockAddSpline = (tflcBlockAddSpline)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddSpline == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddBezier";
+  pflcBlockAddBezier = (tflcBlockAddBezier)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddBezier == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddMline";
+  pflcBlockAddMline = (tflcBlockAddMline)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddMline == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddRect";
+  pflcBlockAddRect = (tflcBlockAddRect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddRect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddRect2";
+  pflcBlockAddRect2 = (tflcBlockAddRect2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddRect2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddCircle";
+  pflcBlockAddCircle = (tflcBlockAddCircle)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddCircle == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddArc";
+  pflcBlockAddArc = (tflcBlockAddArc)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddArc == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddArc3P";
+  pflcBlockAddArc3P = (tflcBlockAddArc3P)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddArc3P == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddFillet";
+  pflcBlockAddFillet = (tflcBlockAddFillet)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddFillet == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddEllipse";
+  pflcBlockAddEllipse = (tflcBlockAddEllipse)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddEllipse == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddText";
+  pflcBlockAddText = (tflcBlockAddText)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddText == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddText2";
+  pflcBlockAddText2 = (tflcBlockAddText2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddText2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddText3";
+  pflcBlockAddText3 = (tflcBlockAddText3)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddText3 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddTextWin";
+  pflcBlockAddTextWin = (tflcBlockAddTextWin)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddTextWin == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddTextWin2";
+  pflcBlockAddTextWin2 = (tflcBlockAddTextWin2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddTextWin2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddMText";
+  pflcBlockAddMText = (tflcBlockAddMText)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddMText == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddArcText";
+  pflcBlockAddArcText = (tflcBlockAddArcText)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddArcText == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddBlockRef";
+  pflcBlockAddBlockRef = (tflcBlockAddBlockRef)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddBlockRef == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddBlockRefID";
+  pflcBlockAddBlockRefID = (tflcBlockAddBlockRefID)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddBlockRefID == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddBlockRefIDH";
+  pflcBlockAddBlockRefIDH = (tflcBlockAddBlockRefIDH)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddBlockRefIDH == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddAttDef";
+  pflcBlockAddAttDef = (tflcBlockAddAttDef)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddAttDef == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddXref";
+  pflcBlockAddXref = (tflcBlockAddXref)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddXref == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddImageRef";
+  pflcBlockAddImageRef = (tflcBlockAddImageRef)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddImageRef == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddImageRefUns";
+  pflcBlockAddImageRefUns = (tflcBlockAddImageRefUns)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddImageRefUns == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddImagePlace";
+  pflcBlockAddImagePlace = (tflcBlockAddImagePlace)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddImagePlace == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddEcw";
+  pflcBlockAddEcw = (tflcBlockAddEcw)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddEcw == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddBarcode";
+  pflcBlockAddBarcode = (tflcBlockAddBarcode)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddBarcode == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddHatch";
+  pflcBlockAddHatch = (tflcBlockAddHatch)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddHatch == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddViewport";
+  pflcBlockAddViewport = (tflcBlockAddViewport)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddViewport == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddFace";
+  pflcBlockAddFace = (tflcBlockAddFace)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddFace == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddFace4";
+  pflcBlockAddFace4 = (tflcBlockAddFace4)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddFace4 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddLeader";
+  pflcBlockAddLeader = (tflcBlockAddLeader)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddLeader == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimLin";
+  pflcBlockAddDimLin = (tflcBlockAddDimLin)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimLin == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimHor";
+  pflcBlockAddDimHor = (tflcBlockAddDimHor)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimHor == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimVer";
+  pflcBlockAddDimVer = (tflcBlockAddDimVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimAli";
+  pflcBlockAddDimAli = (tflcBlockAddDimAli)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimAli == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimAli2";
+  pflcBlockAddDimAli2 = (tflcBlockAddDimAli2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimAli2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimOrd";
+  pflcBlockAddDimOrd = (tflcBlockAddDimOrd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimOrd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimRad";
+  pflcBlockAddDimRad = (tflcBlockAddDimRad)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimRad == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimRad2";
+  pflcBlockAddDimRad2 = (tflcBlockAddDimRad2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimRad2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimDia";
+  pflcBlockAddDimDia = (tflcBlockAddDimDia)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimDia == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimDia2";
+  pflcBlockAddDimDia2 = (tflcBlockAddDimDia2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimDia2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimAng";
+  pflcBlockAddDimAng = (tflcBlockAddDimAng)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimAng == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddDimAng2";
+  pflcBlockAddDimAng2 = (tflcBlockAddDimAng2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddDimAng2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddRPlan";
+  pflcBlockAddRPlan = (tflcBlockAddRPlan)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddRPlan == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddRPlan2";
+  pflcBlockAddRPlan2 = (tflcBlockAddRPlan2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddRPlan2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddArrow";
+  pflcBlockAddArrow = (tflcBlockAddArrow)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddArrow == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddSpiral";
+  pflcBlockAddSpiral = (tflcBlockAddSpiral)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddSpiral == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddCamview";
+  pflcBlockAddCamview = (tflcBlockAddCamview)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddCamview == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddTIN";
+  pflcBlockAddTIN = (tflcBlockAddTIN)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddTIN == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddClone";
+  pflcBlockAddClone = (tflcBlockAddClone)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddClone == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockBeginShape";
+  pflcBlockBeginShape = (tflcBlockBeginShape)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockBeginShape == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddShape";
+  pflcBlockAddShape = (tflcBlockAddShape)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddShape == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockAddShapeSel";
+  pflcBlockAddShapeSel = (tflcBlockAddShapeSel)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockAddShapeSel == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockRepEllipse";
+  pflcBlockRepEllipse = (tflcBlockRepEllipse)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockRepEllipse == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockJoinAll";
+  pflcBlockJoinAll = (tflcBlockJoinAll)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockJoinAll == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockCopyLayer";
+  pflcBlockCopyLayer = (tflcBlockCopyLayer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockCopyLayer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockDeleteEnt";
+  pflcBlockDeleteEnt = (tflcBlockDeleteEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockDeleteEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetFirstEnt";
+  pflcBlockGetFirstEnt = (tflcBlockGetFirstEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetFirstEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetNextEnt";
+  pflcBlockGetNextEnt = (tflcBlockGetNextEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetNextEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetLastEnt";
+  pflcBlockGetLastEnt = (tflcBlockGetLastEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetLastEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetPrevEnt";
+  pflcBlockGetPrevEnt = (tflcBlockGetPrevEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetPrevEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetEntByID";
+  pflcBlockGetEntByID = (tflcBlockGetEntByID)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetEntByID == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetEntByIDH";
+  pflcBlockGetEntByIDH = (tflcBlockGetEntByIDH)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetEntByIDH == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetEntByKey";
+  pflcBlockGetEntByKey = (tflcBlockGetEntByKey)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetEntByKey == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetBlkRefByTag";
+  pflcBlockGetBlkRefByTag = (tflcBlockGetBlkRefByTag)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetBlkRefByTag == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetTIN";
+  pflcBlockGetTIN = (tflcBlockGetTIN)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetTIN == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockUnselect";
+  pflcBlockUnselect = (tflcBlockUnselect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockUnselect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSelectEnt";
+  pflcBlockSelectEnt = (tflcBlockSelectEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSelectEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSelErase";
+  pflcBlockSelErase = (tflcBlockSelErase)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSelErase == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSelMove";
+  pflcBlockSelMove = (tflcBlockSelMove)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSelMove == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSelScale";
+  pflcBlockSelScale = (tflcBlockSelScale)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSelScale == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSelRotate";
+  pflcBlockSelRotate = (tflcBlockSelRotate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSelRotate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSelMirror";
+  pflcBlockSelMirror = (tflcBlockSelMirror)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSelMirror == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSelExplode";
+  pflcBlockSelExplode = (tflcBlockSelExplode)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSelExplode == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSelSplit";
+  pflcBlockSelSplit = (tflcBlockSelSplit)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSelSplit == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSelJoin";
+  pflcBlockSelJoin = (tflcBlockSelJoin)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSelJoin == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSelAlign";
+  pflcBlockSelAlign = (tflcBlockSelAlign)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSelAlign == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSelBlock";
+  pflcBlockSelBlock = (tflcBlockSelBlock)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSelBlock == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetFirstSel";
+  pflcBlockGetFirstSel = (tflcBlockGetFirstSel)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetFirstSel == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetNextSel";
+  pflcBlockGetNextSel = (tflcBlockGetNextSel)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetNextSel == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockOrderByLayers";
+  pflcBlockOrderByLayers = (tflcBlockOrderByLayers)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockOrderByLayers == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockSortTSP";
+  pflcBlockSortTSP = (tflcBlockSortTSP)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockSortTSP == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlockGetJumpsLen";
+  pflcBlockGetJumpsLen = (tflcBlockGetJumpsLen)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlockGetJumpsLen == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcLayerClear";
+  pflcLayerClear = (tflcLayerClear)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcLayerClear == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcLayerCopyProps";
+  pflcLayerCopyProps = (tflcLayerCopyProps)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcLayerCopyProps == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcFillSetLine";
+  pflcFillSetLine = (tflcFillSetLine)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcFillSetLine == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMLStyleAddLine";
+  pflcMLStyleAddLine = (tflcMLStyleAddLine)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMLStyleAddLine == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMLStyleDelLine";
+  pflcMLStyleDelLine = (tflcMLStyleDelLine)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMLStyleDelLine == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMLStyleSortLines";
+  pflcMLStyleSortLines = (tflcMLStyleSortLines)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMLStyleSortLines == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntType";
+  pflcEntType = (tflcEntType)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntType == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntErase";
+  pflcEntErase = (tflcEntErase)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntErase == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntMove";
+  pflcEntMove = (tflcEntMove)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntMove == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntAlign";
+  pflcEntAlign = (tflcEntAlign)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntAlign == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntScale";
+  pflcEntScale = (tflcEntScale)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntScale == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntRotate";
+  pflcEntRotate = (tflcEntRotate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntRotate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntMirror";
+  pflcEntMirror = (tflcEntMirror)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntMirror == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntExplode";
+  pflcEntExplode = (tflcEntExplode)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntExplode == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntSplit";
+  pflcEntSplit = (tflcEntSplit)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntSplit == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntBreak";
+  pflcEntBreak = (tflcEntBreak)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntBreak == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntBreak2";
+  pflcEntBreak2 = (tflcEntBreak2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntBreak2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntOffset";
+  pflcEntOffset = (tflcEntOffset)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntOffset == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntExtend";
+  pflcEntExtend = (tflcEntExtend)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntExtend == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntToTop";
+  pflcEntToTop = (tflcEntToTop)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntToTop == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntToBottom";
+  pflcEntToBottom = (tflcEntToBottom)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntToBottom == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntToAbove";
+  pflcEntToAbove = (tflcEntToAbove)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntToAbove == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntToUnder";
+  pflcEntToUnder = (tflcEntToUnder)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntToUnder == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntGetGrip";
+  pflcEntGetGrip = (tflcEntGetGrip)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntGetGrip == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntPutGrip";
+  pflcEntPutGrip = (tflcEntPutGrip)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntPutGrip == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntUpdate";
+  pflcEntUpdate = (tflcEntUpdate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntUpdate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntCopyBase";
+  pflcEntCopyBase = (tflcEntCopyBase)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntCopyBase == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntXData";
+  pflcEntXData = (tflcEntXData)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntXData == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntContainEnt";
+  pflcEntContainEnt = (tflcEntContainEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntContainEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntCrossEnt";
+  pflcEntCrossEnt = (tflcEntCrossEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntCrossEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntReverse";
+  pflcEntReverse = (tflcEntReverse)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntReverse == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntGetPoint";
+  pflcEntGetPoint = (tflcEntGetPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntGetPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntGetDist";
+  pflcEntGetDist = (tflcEntGetDist)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntGetDist == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcEntTransform";
+  pflcEntTransform = (tflcEntTransform)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcEntTransform == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcIntersection";
+  pflcIntersection = (tflcIntersection)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcIntersection == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcInterGetPoint";
+  pflcInterGetPoint = (tflcInterGetPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcInterGetPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcLineGetPoint";
+  pflcLineGetPoint = (tflcLineGetPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcLineGetPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineAddVer";
+  pflcPlineAddVer = (tflcPlineAddVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineAddVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineAddVer2";
+  pflcPlineAddVer2 = (tflcPlineAddVer2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineAddVer2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineAddVerDir";
+  pflcPlineAddVerDir = (tflcPlineAddVerDir)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineAddVerDir == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineEnd";
+  pflcPlineEnd = (tflcPlineEnd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineEnd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineFromPtbuf";
+  pflcPlineFromPtbuf = (tflcPlineFromPtbuf)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineFromPtbuf == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineFromMpgon";
+  pflcPlineFromMpgon = (tflcPlineFromMpgon)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineFromMpgon == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineFromFile";
+  pflcPlineFromFile = (tflcPlineFromFile)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineFromFile == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineDeleteVer";
+  pflcPlineDeleteVer = (tflcPlineDeleteVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineDeleteVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineDelExVers";
+  pflcPlineDelExVers = (tflcPlineDelExVers)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineDelExVers == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineGetFirstVer";
+  pflcPlineGetFirstVer = (tflcPlineGetFirstVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineGetFirstVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineGetNextVer";
+  pflcPlineGetNextVer = (tflcPlineGetNextVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineGetNextVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineGetLastVer";
+  pflcPlineGetLastVer = (tflcPlineGetLastVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineGetLastVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineGetPrevVer";
+  pflcPlineGetPrevVer = (tflcPlineGetPrevVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineGetPrevVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineGetVer";
+  pflcPlineGetVer = (tflcPlineGetVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineGetVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineGetVerPt";
+  pflcPlineGetVerPt = (tflcPlineGetVerPt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineGetVerPt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineGetSeg";
+  pflcPlineGetSeg = (tflcPlineGetSeg)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineGetSeg == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineReverse";
+  pflcPlineReverse = (tflcPlineReverse)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineReverse == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineSetStartVer";
+  pflcPlineSetStartVer = (tflcPlineSetStartVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineSetStartVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineContainPoint";
+  pflcPlineContainPoint = (tflcPlineContainPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineContainPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineGetRoundPrm";
+  pflcPlineGetRoundPrm = (tflcPlineGetRoundPrm)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineGetRoundPrm == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineGetPoint";
+  pflcPlineGetPoint = (tflcPlineGetPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineGetPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineGetPointOpp";
+  pflcPlineGetPointOpp = (tflcPlineGetPointOpp)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineGetPointOpp == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineGetDist";
+  pflcPlineGetDist = (tflcPlineGetDist)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineGetDist == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineDivide";
+  pflcPlineDivide = (tflcPlineDivide)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineDivide == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineDivide2";
+  pflcPlineDivide2 = (tflcPlineDivide2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineDivide2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGetDivPt";
+  pflcGetDivPt = (tflcGetDivPt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGetDivPt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineMakeArrow";
+  pflcPlineMakeArrow = (tflcPlineMakeArrow)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineMakeArrow == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlineSplitBySI";
+  pflcPlineSplitBySI = (tflcPlineSplitBySI)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlineSplitBySI == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBezierAddVer";
+  pflcBezierAddVer = (tflcBezierAddVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBezierAddVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBezierEnd";
+  pflcBezierEnd = (tflcBezierEnd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBezierEnd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBezierSetVerPrm";
+  pflcBezierSetVerPrm = (tflcBezierSetVerPrm)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBezierSetVerPrm == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMlineAddVer";
+  pflcMlineAddVer = (tflcMlineAddVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMlineAddVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMlineAddVerDir";
+  pflcMlineAddVerDir = (tflcMlineAddVerDir)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMlineAddVerDir == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMlineDeleteVer";
+  pflcMlineDeleteVer = (tflcMlineDeleteVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMlineDeleteVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMlineGetFirstVer";
+  pflcMlineGetFirstVer = (tflcMlineGetFirstVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMlineGetFirstVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMlineGetNextVer";
+  pflcMlineGetNextVer = (tflcMlineGetNextVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMlineGetNextVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMlineGetLastVer";
+  pflcMlineGetLastVer = (tflcMlineGetLastVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMlineGetLastVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMlineGetPrevVer";
+  pflcMlineGetPrevVer = (tflcMlineGetPrevVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMlineGetPrevVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMlineGetVer";
+  pflcMlineGetVer = (tflcMlineGetVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMlineGetVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMlineGetVerPt";
+  pflcMlineGetVerPt = (tflcMlineGetVerPt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMlineGetVerPt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMlineGetSeg";
+  pflcMlineGetSeg = (tflcMlineGetSeg)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMlineGetSeg == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcMlineReverse";
+  pflcMlineReverse = (tflcMlineReverse)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcMlineReverse == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanAddVer";
+  pflcRPlanAddVer = (tflcRPlanAddVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanAddVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanSetCurve";
+  pflcRPlanSetCurve = (tflcRPlanSetCurve)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanSetCurve == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanSetPos";
+  pflcRPlanSetPos = (tflcRPlanSetPos)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanSetPos == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanDeleteVer";
+  pflcRPlanDeleteVer = (tflcRPlanDeleteVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanDeleteVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanGetFirstVer";
+  pflcRPlanGetFirstVer = (tflcRPlanGetFirstVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanGetFirstVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanGetNextVer";
+  pflcRPlanGetNextVer = (tflcRPlanGetNextVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanGetNextVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanGetLastVer";
+  pflcRPlanGetLastVer = (tflcRPlanGetLastVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanGetLastVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanGetPrevVer";
+  pflcRPlanGetPrevVer = (tflcRPlanGetPrevVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanGetPrevVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanGetVer";
+  pflcRPlanGetVer = (tflcRPlanGetVer)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanGetVer == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanGetPoint";
+  pflcRPlanGetPoint = (tflcRPlanGetPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanGetPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanGetDist";
+  pflcRPlanGetDist = (tflcRPlanGetDist)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanGetDist == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRPlanWriteCSV";
+  pflcRPlanWriteCSV = (tflcRPlanWriteCSV)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRPlanWriteCSV == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcXlinePutDir";
+  pflcXlinePutDir = (tflcXlinePutDir)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcXlinePutDir == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcRectGetPolyline";
+  pflcRectGetPolyline = (tflcRectGetPolyline)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcRectGetPolyline == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImgRefGetPixel";
+  pflcImgRefGetPixel = (tflcImgRefGetPixel)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImgRefGetPixel == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImgRefResize";
+  pflcImgRefResize = (tflcImgRefResize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImgRefResize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchSetPattern";
+  pflcHatchSetPattern = (tflcHatchSetPattern)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchSetPattern == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchBoundStart";
+  pflcHatchBoundStart = (tflcHatchBoundStart)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchBoundStart == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchBoundPoint";
+  pflcHatchBoundPoint = (tflcHatchBoundPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchBoundPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchBoundEntity";
+  pflcHatchBoundEntity = (tflcHatchBoundEntity)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchBoundEntity == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchBoundEndLoop";
+  pflcHatchBoundEndLoop = (tflcHatchBoundEndLoop)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchBoundEndLoop == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchBoundEnd";
+  pflcHatchBoundEnd = (tflcHatchBoundEnd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchBoundEnd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchPatStart";
+  pflcHatchPatStart = (tflcHatchPatStart)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchPatStart == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchPatLine";
+  pflcHatchPatLine = (tflcHatchPatLine)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchPatLine == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchPatEnd";
+  pflcHatchPatEnd = (tflcHatchPatEnd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchPatEnd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchGetLoopSize";
+  pflcHatchGetLoopSize = (tflcHatchGetLoopSize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchGetLoopSize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchGetPoint";
+  pflcHatchGetPoint = (tflcHatchGetPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchGetPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcHatchGetEnt";
+  pflcHatchGetEnt = (tflcHatchGetEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcHatchGetEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcVportSetView";
+  pflcVportSetView = (tflcVportSetView)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcVportSetView == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcVportLayerDlg";
+  pflcVportLayerDlg = (tflcVportLayerDlg)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcVportLayerDlg == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcVportLayerCmd";
+  pflcVportLayerCmd = (tflcVportLayerCmd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcVportLayerCmd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlkRefAddAtt";
+  pflcBlkRefAddAtt = (tflcBlkRefAddAtt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlkRefAddAtt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlkRefGetFirstAtt";
+  pflcBlkRefGetFirstAtt = (tflcBlkRefGetFirstAtt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlkRefGetFirstAtt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlkRefGetNextAtt";
+  pflcBlkRefGetNextAtt = (tflcBlkRefGetNextAtt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlkRefGetNextAtt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlkRefGetAtt";
+  pflcBlkRefGetAtt = (tflcBlkRefGetAtt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlkRefGetAtt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlkRefGetAttVal";
+  pflcBlkRefGetAttVal = (tflcBlkRefGetAttVal)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlkRefGetAttVal == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcBlkRefPutAttVal";
+  pflcBlkRefPutAttVal = (tflcBlkRefPutAttVal)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcBlkRefPutAttVal == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcShapeAddEnt";
+  pflcShapeAddEnt = (tflcShapeAddEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcShapeAddEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcShapeEnd";
+  pflcShapeEnd = (tflcShapeEnd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcShapeEnd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcShapeGetFirstEnt";
+  pflcShapeGetFirstEnt = (tflcShapeGetFirstEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcShapeGetFirstEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcShapeGetNextEnt";
+  pflcShapeGetNextEnt = (tflcShapeGetNextEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcShapeGetNextEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcShapeGetLastEnt";
+  pflcShapeGetLastEnt = (tflcShapeGetLastEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcShapeGetLastEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcShapeGetPrevEnt";
+  pflcShapeGetPrevEnt = (tflcShapeGetPrevEnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcShapeGetPrevEnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_AddPoint";
+  pflcTIN_AddPoint = (tflcTIN_AddPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_AddPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_PtypeGetByName";
+  pflcTIN_PtypeGetByName = (tflcTIN_PtypeGetByName)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_PtypeGetByName == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_PtypeGetFirst";
+  pflcTIN_PtypeGetFirst = (tflcTIN_PtypeGetFirst)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_PtypeGetFirst == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_PtypeGetNext";
+  pflcTIN_PtypeGetNext = (tflcTIN_PtypeGetNext)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_PtypeGetNext == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_PntGetFirst";
+  pflcTIN_PntGetFirst = (tflcTIN_PntGetFirst)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_PntGetFirst == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_PntGetNext";
+  pflcTIN_PntGetNext = (tflcTIN_PntGetNext)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_PntGetNext == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_PntGetNear";
+  pflcTIN_PntGetNear = (tflcTIN_PntGetNear)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_PntGetNear == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_PntDelDup";
+  pflcTIN_PntDelDup = (tflcTIN_PntDelDup)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_PntDelDup == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_TriGetFirst";
+  pflcTIN_TriGetFirst = (tflcTIN_TriGetFirst)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_TriGetFirst == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_TriGetNext";
+  pflcTIN_TriGetNext = (tflcTIN_TriGetNext)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_TriGetNext == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_TriGetByPos";
+  pflcTIN_TriGetByPos = (tflcTIN_TriGetByPos)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_TriGetByPos == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_TriGetEdge";
+  pflcTIN_TriGetEdge = (tflcTIN_TriGetEdge)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_TriGetEdge == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_TriUpdate";
+  pflcTIN_TriUpdate = (tflcTIN_TriUpdate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_TriUpdate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_Bnd";
+  pflcTIN_Bnd = (tflcTIN_Bnd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_Bnd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_BndGetPoint";
+  pflcTIN_BndGetPoint = (tflcTIN_BndGetPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_BndGetPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_Triangulate";
+  pflcTIN_Triangulate = (tflcTIN_Triangulate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_Triangulate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_Isolines";
+  pflcTIN_Isolines = (tflcTIN_Isolines)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_Isolines == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_IsoGetFirst";
+  pflcTIN_IsoGetFirst = (tflcTIN_IsoGetFirst)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_IsoGetFirst == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_IsoGetNext";
+  pflcTIN_IsoGetNext = (tflcTIN_IsoGetNext)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_IsoGetNext == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_IsoMakeLabels";
+  pflcTIN_IsoMakeLabels = (tflcTIN_IsoMakeLabels)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_IsoMakeLabels == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_GetIsoLabel";
+  pflcTIN_GetIsoLabel = (tflcTIN_GetIsoLabel)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_GetIsoLabel == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_GetZ";
+  pflcTIN_GetZ = (tflcTIN_GetZ)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_GetZ == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_ColorFill";
+  pflcTIN_ColorFill = (tflcTIN_ColorFill)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_ColorFill == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_Save";
+  pflcTIN_Save = (tflcTIN_Save)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_Save == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_InterLine";
+  pflcTIN_InterLine = (tflcTIN_InterLine)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_InterLine == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_InterGetPoint";
+  pflcTIN_InterGetPoint = (tflcTIN_InterGetPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_InterGetPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_Clear";
+  pflcTIN_Clear = (tflcTIN_Clear)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_Clear == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_AddTrian";
+  pflcTIN_AddTrian = (tflcTIN_AddTrian)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_AddTrian == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_BndAddPnt";
+  pflcTIN_BndAddPnt = (tflcTIN_BndAddPnt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_BndAddPnt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcTIN_Merge";
+  pflcTIN_Merge = (tflcTIN_Merge)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcTIN_Merge == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcColorRGB";
+  pflcColorRGB = (tflcColorRGB)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcColorRGB == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcColorIsRGB";
+  pflcColorIsRGB = (tflcColorIsRGB)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcColorIsRGB == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcColorGetRed";
+  pflcColorGetRed = (tflcColorGetRed)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcColorGetRed == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcColorGetGreen";
+  pflcColorGetGreen = (tflcColorGetGreen)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcColorGetGreen == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcColorGetBlue";
+  pflcColorGetBlue = (tflcColorGetBlue)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcColorGetBlue == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcColorGetIndex";
+  pflcColorGetIndex = (tflcColorGetIndex)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcColorGetIndex == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcColorToVal";
+  pflcColorToVal = (tflcColorToVal)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcColorToVal == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcColorSetPalette";
+  pflcColorSetPalette = (tflcColorSetPalette)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcColorSetPalette == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcColorGetPalette";
+  pflcColorGetPalette = (tflcColorGetPalette)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcColorGetPalette == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcColorSavePalette";
+  pflcColorSavePalette = (tflcColorSavePalette)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcColorSavePalette == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcColorLoadPalette";
+  pflcColorLoadPalette = (tflcColorLoadPalette)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcColorLoadPalette == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImageSetPixelRGB";
+  pflcImageSetPixelRGB = (tflcImageSetPixelRGB)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImageSetPixelRGB == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImageSetPixelI";
+  pflcImageSetPixelI = (tflcImageSetPixelI)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImageSetPixelI == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImageGetPixelRGB";
+  pflcImageGetPixelRGB = (tflcImageGetPixelRGB)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImageGetPixelRGB == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImageGetPixelI";
+  pflcImageGetPixelI = (tflcImageGetPixelI)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImageGetPixelI == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImageSetPalColor";
+  pflcImageSetPalColor = (tflcImageSetPalColor)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImageSetPalColor == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImageGetPalColor";
+  pflcImageGetPalColor = (tflcImageGetPalColor)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImageGetPalColor == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImageLoad";
+  pflcImageLoad = (tflcImageLoad)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImageLoad == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImageLoadDIB";
+  pflcImageLoadDIB = (tflcImageLoadDIB)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImageLoadDIB == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImageLoadCamera";
+  pflcImageLoadCamera = (tflcImageLoadCamera)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImageLoadCamera == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImageCopyQuad";
+  pflcImageCopyQuad = (tflcImageCopyQuad)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImageCopyQuad == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcImageProc";
+  pflcImageProc = (tflcImageProc)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcImageProc == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcExpEntity";
+  pflcExpEntity = (tflcExpEntity)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcExpEntity == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcExpGetPline";
+  pflcExpGetPline = (tflcExpGetPline)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcExpGetPline == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcExpGetVertex";
+  pflcExpGetVertex = (tflcExpGetVertex)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcExpGetVertex == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcExpBlock";
+  pflcExpBlock = (tflcExpBlock)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcExpBlock == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGbrLoad";
+  pflcGbrLoad = (tflcGbrLoad)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGbrLoad == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGbrClose";
+  pflcGbrClose = (tflcGbrClose)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGbrClose == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlugGetOption";
+  pflcPlugGetOption = (tflcPlugGetOption)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlugGetOption == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlugGetOption2";
+  pflcPlugGetOption2 = (tflcPlugGetOption2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlugGetOption2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPlugSetOption";
+  pflcPlugSetOption = (tflcPlugSetOption)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPlugSetOption == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPrintSetup";
+  pflcPrintSetup = (tflcPrintSetup)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPrintSetup == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPrintLayout";
+  pflcPrintLayout = (tflcPrintLayout)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPrintLayout == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPrintBlock";
+  pflcPrintBlock = (tflcPrintBlock)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPrintBlock == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcXDataBegin";
+  pflcXDataBegin = (tflcXDataBegin)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcXDataBegin == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcXDataEnd";
+  pflcXDataEnd = (tflcXDataEnd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcXDataEnd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcXDataClear";
+  pflcXDataClear = (tflcXDataClear)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcXDataClear == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcXDataSet";
+  pflcXDataSet = (tflcXDataSet)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcXDataSet == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndTabClear";
+  pflcWndTabClear = (tflcWndTabClear)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndTabClear == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndTabAdd";
+  pflcWndTabAdd = (tflcWndTabAdd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndTabAdd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndTabSelect";
+  pflcWndTabSelect = (tflcWndTabSelect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndTabSelect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndPaperEnable";
+  pflcWndPaperEnable = (tflcWndPaperEnable)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndPaperEnable == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndPaperSetSize";
+  pflcWndPaperSetSize = (tflcWndPaperSetSize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndPaperSetSize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndPaperSetSize2";
+  pflcWndPaperSetSize2 = (tflcWndPaperSetSize2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndPaperSetSize2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcWndPaperSetPos";
+  pflcWndPaperSetPos = (tflcWndPaperSetPos)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcWndPaperSetPos == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGripClear";
+  pflcGripClear = (tflcGripClear)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGripClear == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGripAdd";
+  pflcGripAdd = (tflcGripAdd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGripAdd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcGripSet";
+  pflcGripSet = (tflcGripSet)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcGripSet == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PenCreate";
+  pflcPaint_PenCreate = (tflcPaint_PenCreate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PenCreate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PenSelect";
+  pflcPaint_PenSelect = (tflcPaint_PenSelect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PenSelect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PenSelectID";
+  pflcPaint_PenSelectID = (tflcPaint_PenSelectID)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PenSelectID == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_BrushCreate";
+  pflcPaint_BrushCreate = (tflcPaint_BrushCreate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_BrushCreate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_BrushSelect";
+  pflcPaint_BrushSelect = (tflcPaint_BrushSelect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_BrushSelect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_BrushSelectID";
+  pflcPaint_BrushSelectID = (tflcPaint_BrushSelectID)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_BrushSelectID == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawPtbuf";
+  pflcPaint_DrawPtbuf = (tflcPaint_DrawPtbuf)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawPtbuf == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawMpgon";
+  pflcPaint_DrawMpgon = (tflcPaint_DrawMpgon)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawMpgon == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawImage";
+  pflcPaint_DrawImage = (tflcPaint_DrawImage)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawImage == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawImage2";
+  pflcPaint_DrawImage2 = (tflcPaint_DrawImage2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawImage2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawText";
+  pflcPaint_DrawText = (tflcPaint_DrawText)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawText == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawText2";
+  pflcPaint_DrawText2 = (tflcPaint_DrawText2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawText2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawTextBC";
+  pflcPaint_DrawTextBC = (tflcPaint_DrawTextBC)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawTextBC == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawArcText";
+  pflcPaint_DrawArcText = (tflcPaint_DrawArcText)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawArcText == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawHatch";
+  pflcPaint_DrawHatch = (tflcPaint_DrawHatch)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawHatch == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawPoint";
+  pflcPaint_DrawPoint = (tflcPaint_DrawPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawLine";
+  pflcPaint_DrawLine = (tflcPaint_DrawLine)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawLine == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawXline";
+  pflcPaint_DrawXline = (tflcPaint_DrawXline)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawXline == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawRect";
+  pflcPaint_DrawRect = (tflcPaint_DrawRect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawRect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawRect2";
+  pflcPaint_DrawRect2 = (tflcPaint_DrawRect2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawRect2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawPickBox";
+  pflcPaint_DrawPickBox = (tflcPaint_DrawPickBox)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawPickBox == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawGrid";
+  pflcPaint_DrawGrid = (tflcPaint_DrawGrid)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawGrid == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DrawCPrompt";
+  pflcPaint_DrawCPrompt = (tflcPaint_DrawCPrompt)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DrawCPrompt == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_SetPixel";
+  pflcPaint_SetPixel = (tflcPaint_SetPixel)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_SetPixel == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_CreatePtbuf";
+  pflcPaint_CreatePtbuf = (tflcPaint_CreatePtbuf)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_CreatePtbuf == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DeletePtbuf";
+  pflcPaint_DeletePtbuf = (tflcPaint_DeletePtbuf)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DeletePtbuf == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufClear";
+  pflcPaint_PtbufClear = (tflcPaint_PtbufClear)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufClear == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddPoint";
+  pflcPaint_PtbufAddPoint = (tflcPaint_PtbufAddPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddPoint2";
+  pflcPaint_PtbufAddPoint2 = (tflcPaint_PtbufAddPoint2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddPoint2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddPointP";
+  pflcPaint_PtbufAddPointP = (tflcPaint_PtbufAddPointP)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddPointP == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddLine";
+  pflcPaint_PtbufAddLine = (tflcPaint_PtbufAddLine)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddLine == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddLineP";
+  pflcPaint_PtbufAddLineP = (tflcPaint_PtbufAddLineP)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddLineP == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddCircle";
+  pflcPaint_PtbufAddCircle = (tflcPaint_PtbufAddCircle)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddCircle == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddCircle2";
+  pflcPaint_PtbufAddCircle2 = (tflcPaint_PtbufAddCircle2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddCircle2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddCircle3";
+  pflcPaint_PtbufAddCircle3 = (tflcPaint_PtbufAddCircle3)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddCircle3 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArc";
+  pflcPaint_PtbufAddArc = (tflcPaint_PtbufAddArc)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArc == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArc3p";
+  pflcPaint_PtbufAddArc3p = (tflcPaint_PtbufAddArc3p)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArc3p == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArcSDE";
+  pflcPaint_PtbufAddArcSDE = (tflcPaint_PtbufAddArcSDE)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArcSDE == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArcSDAR";
+  pflcPaint_PtbufAddArcSDAR = (tflcPaint_PtbufAddArcSDAR)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArcSDAR == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArcSER";
+  pflcPaint_PtbufAddArcSER = (tflcPaint_PtbufAddArcSER)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArcSER == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArcSEL";
+  pflcPaint_PtbufAddArcSEL = (tflcPaint_PtbufAddArcSEL)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArcSEL == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArcSEA";
+  pflcPaint_PtbufAddArcSEA = (tflcPaint_PtbufAddArcSEA)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArcSEA == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArcSEB";
+  pflcPaint_PtbufAddArcSEB = (tflcPaint_PtbufAddArcSEB)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArcSEB == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArcCSE";
+  pflcPaint_PtbufAddArcCSE = (tflcPaint_PtbufAddArcCSE)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArcCSE == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArcCSA";
+  pflcPaint_PtbufAddArcCSA = (tflcPaint_PtbufAddArcCSA)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArcCSA == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArcCSL";
+  pflcPaint_PtbufAddArcCSL = (tflcPaint_PtbufAddArcCSL)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArcCSL == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddArcCRAA";
+  pflcPaint_PtbufAddArcCRAA = (tflcPaint_PtbufAddArcCRAA)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddArcCRAA == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddEllipse";
+  pflcPaint_PtbufAddEllipse = (tflcPaint_PtbufAddEllipse)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddEllipse == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddEllipse2";
+  pflcPaint_PtbufAddEllipse2 = (tflcPaint_PtbufAddEllipse2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddEllipse2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddRect";
+  pflcPaint_PtbufAddRect = (tflcPaint_PtbufAddRect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddRect == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddRect2";
+  pflcPaint_PtbufAddRect2 = (tflcPaint_PtbufAddRect2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddRect2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddRect3";
+  pflcPaint_PtbufAddRect3 = (tflcPaint_PtbufAddRect3)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddRect3 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddWline";
+  pflcPaint_PtbufAddWline = (tflcPaint_PtbufAddWline)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddWline == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufAddPtbuf";
+  pflcPaint_PtbufAddPtbuf = (tflcPaint_PtbufAddPtbuf)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufAddPtbuf == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufGetPoint";
+  pflcPaint_PtbufGetPoint = (tflcPaint_PtbufGetPoint)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufGetPoint == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufGetPoint2";
+  pflcPaint_PtbufGetPoint2 = (tflcPaint_PtbufGetPoint2)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufGetPoint2 == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufInterpolate";
+  pflcPaint_PtbufInterpolate = (tflcPaint_PtbufInterpolate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufInterpolate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufMove";
+  pflcPaint_PtbufMove = (tflcPaint_PtbufMove)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufMove == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufRotate";
+  pflcPaint_PtbufRotate = (tflcPaint_PtbufRotate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufRotate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufScale";
+  pflcPaint_PtbufScale = (tflcPaint_PtbufScale)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufScale == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufMirror";
+  pflcPaint_PtbufMirror = (tflcPaint_PtbufMirror)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufMirror == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_PtbufCopy";
+  pflcPaint_PtbufCopy = (tflcPaint_PtbufCopy)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_PtbufCopy == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_CreateMpgon";
+  pflcPaint_CreateMpgon = (tflcPaint_CreateMpgon)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_CreateMpgon == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_DeleteMpgon";
+  pflcPaint_DeleteMpgon = (tflcPaint_DeleteMpgon)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_DeleteMpgon == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_MpgonClear";
+  pflcPaint_MpgonClear = (tflcPaint_MpgonClear)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_MpgonClear == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_MpgonAddPgon";
+  pflcPaint_MpgonAddPgon = (tflcPaint_MpgonAddPgon)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_MpgonAddPgon == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_MpgonAddText";
+  pflcPaint_MpgonAddText = (tflcPaint_MpgonAddText)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_MpgonAddText == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_MpgonAddBarcode";
+  pflcPaint_MpgonAddBarcode = (tflcPaint_MpgonAddBarcode)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_MpgonAddBarcode == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_MpgonMove";
+  pflcPaint_MpgonMove = (tflcPaint_MpgonMove)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_MpgonMove == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_MpgonRotate";
+  pflcPaint_MpgonRotate = (tflcPaint_MpgonRotate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_MpgonRotate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_MpgonScale";
+  pflcPaint_MpgonScale = (tflcPaint_MpgonScale)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_MpgonScale == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_MpgonMirror";
+  pflcPaint_MpgonMirror = (tflcPaint_MpgonMirror)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_MpgonMirror == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_MpgonCopy";
+  pflcPaint_MpgonCopy = (tflcPaint_MpgonCopy)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_MpgonCopy == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_HatchGen";
+  pflcPaint_HatchGen = (tflcPaint_HatchGen)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_HatchGen == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageAdd";
+  pflcPaint_ImageAdd = (tflcPaint_ImageAdd)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageAdd == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageDelete";
+  pflcPaint_ImageDelete = (tflcPaint_ImageDelete)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageDelete == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageGetFirst";
+  pflcPaint_ImageGetFirst = (tflcPaint_ImageGetFirst)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageGetFirst == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageGetNext";
+  pflcPaint_ImageGetNext = (tflcPaint_ImageGetNext)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageGetNext == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageGetByID";
+  pflcPaint_ImageGetByID = (tflcPaint_ImageGetByID)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageGetByID == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageLoad";
+  pflcPaint_ImageLoad = (tflcPaint_ImageLoad)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageLoad == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageCopy";
+  pflcPaint_ImageCopy = (tflcPaint_ImageCopy)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageCopy == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageCreate";
+  pflcPaint_ImageCreate = (tflcPaint_ImageCreate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageCreate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageSetPixel";
+  pflcPaint_ImageSetPixel = (tflcPaint_ImageSetPixel)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageSetPixel == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageFlip";
+  pflcPaint_ImageFlip = (tflcPaint_ImageFlip)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageFlip == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageRotate";
+  pflcPaint_ImageRotate = (tflcPaint_ImageRotate)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageRotate == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageGray";
+  pflcPaint_ImageGray = (tflcPaint_ImageGray)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageGray == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageResize";
+  pflcPaint_ImageResize = (tflcPaint_ImageResize)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageResize == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_ImageGetPtbuf";
+  pflcPaint_ImageGetPtbuf = (tflcPaint_ImageGetPtbuf)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_ImageGetPtbuf == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_FontOpenLC";
+  pflcPaint_FontOpenLC = (tflcPaint_FontOpenLC)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_FontOpenLC == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_FontOpenTT";
+  pflcPaint_FontOpenTT = (tflcPaint_FontOpenTT)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_FontOpenTT == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_FontClose";
+  pflcPaint_FontClose = (tflcPaint_FontClose)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_FontClose == NULL){
+    goto mErr;
+  }
+  szFuncName = "lcPaint_FontSelect";
+  pflcPaint_FontSelect = (tflcPaint_FontSelect)GetProcAddress( ghLibInst, szFuncName );
+  if (pflcPaint_FontSelect == NULL){
+    goto mErr;
+  }
+  return TRUE;
+mErr:
+  MessageBoxA( GetActiveWindow(), szFuncName, "Not found", MB_OK );
+  return FALSE;
 }
 
-VOID lcFreeLib()
+//-------------------------------------------------
+BOOL lcLoadLib (LPCWSTR szFileName)
 {
-  FreeLibrary( ghLibInst );
-  ghLibInst = 0;
+  ghLibInst = LoadLibraryW( szFileName );
+  if (ghLibInst){
+    if (SetProcAddr()){
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
-typedef BOOL (LCAPI *tflcInitialize)(LPCWSTR szConfigDir);
-typedef BOOL (LCAPI *tflcUninitialize)(BOOL bSaveConfig);
-typedef LPCWSTR (LCAPI *tflcCfgGetValue)(HANDLE hCfg, LPCWSTR szTag);
-typedef BOOL (LCAPI *tflcCfgSetValue)(HANDLE hCfg, LPCWSTR szTagValue);
-typedef HANDLE (LCAPI *tflcAddFontRes)(HANDLE hModule, int idResource, LPCWSTR szFontName);
-typedef HANDLE (LCAPI *tflcAddFontFile)(LPCWSTR szFilename, LPCWSTR szFontName);
-typedef HANDLE (LCAPI *tflcAddFontBin)(HANDLE hData, LPCWSTR szFontName);
-typedef BOOL (LCAPI *tflcStrAdd)(LPCWSTR szTag, LPCWSTR szText);
-typedef BOOL (LCAPI *tflcStrSet)(LPCWSTR szTag, LPCWSTR szText);
-typedef LPCWSTR (LCAPI *tflcStrGet)(LPCWSTR szTag);
-typedef BOOL (LCAPI *tflcStrFileLoad)(LPCWSTR szFileName);
-typedef BOOL (LCAPI *tflcStrFileSave)(LPCWSTR szFileName, LPCWSTR szLanguage, BOOL bInit);
-typedef BOOL (LCAPI *tflcPropGetBool)(HANDLE hObject, int idProp);
-typedef int (LCAPI *tflcPropGetInt)(HANDLE hObject, int idProp);
-typedef double (LCAPI *tflcPropGetFloat)(HANDLE hObject, int idProp);
-typedef LPCWSTR (LCAPI *tflcPropGetStr)(HANDLE hObject, int idProp);
-typedef HANDLE (LCAPI *tflcPropGetHandle)(HANDLE hObject, int idProp);
-typedef BOOL (LCAPI *tflcPropPutBool)(HANDLE hObject, int idProp, BOOL bValue);
-typedef BOOL (LCAPI *tflcPropPutInt)(HANDLE hObject, int idProp, int Value);
-typedef BOOL (LCAPI *tflcPropPutFloat)(HANDLE hObject, int idProp, double Value);
-typedef BOOL (LCAPI *tflcPropPutStr)(HANDLE hObject, int idProp, LPCWSTR szValue);
-typedef BOOL (LCAPI *tflcPropPutHandle)(HANDLE hObject, int idProp, HANDLE hValue);
-typedef HANDLE (LCAPI *tflcCreateDrawing)();
-typedef BOOL (LCAPI *tflcDeleteDrawing)(HANDLE hDrw);
-typedef BOOL (LCAPI *tflcDrwNew)(HANDLE hDrw, LPCWSTR szFileName, HANDLE hLcWnd);
-typedef BOOL (LCAPI *tflcDrwNewT)(HANDLE hDrw, LPCWSTR szFileName, LPCWSTR szTemplate, HANDLE hLcWnd);
-typedef BOOL (LCAPI *tflcDrwLoad)(HANDLE hDrw, LPCWSTR szFileName, HWND hWnd, HANDLE hLcWnd);
-typedef BOOL (LCAPI *tflcDrwSave)(HANDLE hDrw, LPCWSTR szFileName, BOOL bBak, HWND hWnd);
-typedef BOOL (LCAPI *tflcDrwPurge)(HANDLE hDrw);
-typedef BOOL (LCAPI *tflcDrwRegenViews)(HANDLE hDrw, HANDLE hEnt);
-typedef BOOL (LCAPI *tflcDrwSortObjects)(HANDLE hDrw, int ObjType);
-typedef BOOL (LCAPI *tflcDrwClearXData)(HANDLE hDrw, int ObjType, int Mode);
-typedef BOOL (LCAPI *tflcDrwResolveBlocks)(HANDLE hDrw, WCHAR* szError);
-typedef HANDLE (LCAPI *tflcDrwAddLayer)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szColor, HANDLE hLtype, int Lweight);
-typedef HANDLE (LCAPI *tflcDrwAddLinetype)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szDefinition);
-typedef HANDLE (LCAPI *tflcDrwAddLinetypeF)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, LPCWSTR szLtypeName);
-typedef HANDLE (LCAPI *tflcDrwAddTextStyle)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szFontName);
-typedef HANDLE (LCAPI *tflcDrwAddDimStyle)(HANDLE hDrw, LPCWSTR szName);
-typedef HANDLE (LCAPI *tflcDrwAddImage)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName);
-typedef HANDLE (LCAPI *tflcDrwAddBlock)(HANDLE hDrw, LPCWSTR szName, double X, double Y);
-typedef HANDLE (LCAPI *tflcDrwAddBlockFromFile)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, int Overwrite, HWND hwParent);
-typedef HANDLE (LCAPI *tflcDrwAddBlockFromDrw)(HANDLE hDrw, LPCWSTR szName, HANDLE hDrw2, int Overwrite, HWND hwParent);
-typedef HANDLE (LCAPI *tflcDrwAddBlockFile)(HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, int Overwrite, HWND hwParent);
-typedef HANDLE (LCAPI *tflcDrwAddViewPaper)(HANDLE hDrw, LPCWSTR szName, int PaperSize, int Orient, double Width, double Height);
-typedef BOOL (LCAPI *tflcDrwDeleteObject)(HANDLE hDrw, HANDLE hObject);
-typedef HANDLE (LCAPI *tflcDrwGetFirstObject)(HANDLE hDrw, int ObjType);
-typedef HANDLE (LCAPI *tflcDrwGetNextObject)(HANDLE hDrw, HANDLE hObject);
-typedef HANDLE (LCAPI *tflcDrwGetObjectByID)(HANDLE hDrw, int ObjType, int Id);
-typedef HANDLE (LCAPI *tflcDrwGetObjectByIDH)(HANDLE hDrw, int ObjType, LPCWSTR szId);
-typedef HANDLE (LCAPI *tflcDrwGetObjectByName)(HANDLE hDrw, int ObjType, LPCWSTR szName);
-typedef int (LCAPI *tflcDrwCountObjects)(HANDLE hDrw, int ObjType);
-typedef HANDLE (LCAPI *tflcDrwGetViewByBlock)(HANDLE hDrw, HANDLE hBlock);
-typedef HANDLE (LCAPI *tflcDrwGetEntByID)(HANDLE hDrw, int Id);
-typedef HANDLE (LCAPI *tflcDrwGetEntByIDH)(HANDLE hDrw, LPCWSTR szId);
-typedef HANDLE (LCAPI *tflcDrwGetEntByKey)(HANDLE hDrw, int Key);
-typedef BOOL (LCAPI *tflcViewSetRect)(HANDLE hView, double Xcen, double Ycen, double Width, double Height);
-typedef BOOL (LCAPI *tflcViewSetRect2)(HANDLE hView, double Lef, double Bot, double Rig, double Top);
-typedef BOOL (LCAPI *tflcViewSetLimits)(HANDLE hView, double Xmin, double Ymin, double Xmax, double Ymax);
-typedef BOOL (LCAPI *tflcViewSetGrid)(HANDLE hView, double X0, double Y0, double dX, double dY);
-typedef BOOL (LCAPI *tflcViewRegen)(HANDLE hView, HANDLE hEnt);
-typedef BOOL (LCAPI *tflcViewSetPaperSize)(HANDLE hView, int PaperSize, int Orient, double Width, double Height);
-typedef HANDLE (LCAPI *tflcViewGetEntByPoint)(HANDLE hView, double X, double Y, double Delta, int Mode);
-typedef int (LCAPI *tflcViewGetEntsByRect)(HANDLE hView, double Lef, double Bot, double Rig, double Top, BOOL bCross, int MaxNum);
-typedef HANDLE (LCAPI *tflcViewGetEntity)(int iEnt);
-typedef BOOL (LCAPI *tflcViewRasterize)(HANDLE hView, LPCWSTR szFileName, double Lef, double Bot, double Rig, double Top, double Scale);
-typedef BOOL (LCAPI *tflcViewDrawMarker)(HANDLE hView, double X, double Y);
-typedef BOOL (LCAPI *tflcViewDrawLine)(HANDLE hView, double X0, double Y0, double X1, double Y1);
-typedef BOOL (LCAPI *tflcViewDrawXline)(HANDLE hView, double X0, double Y0, double X1, double Y1, BOOL bRay);
-typedef BOOL (LCAPI *tflcViewDrawRect)(HANDLE hView, double X0, double Y0, double X1, double Y1);
-typedef BOOL (LCAPI *tflcBlockClear)(HANDLE hBlock, HANDLE hLayer);
-typedef BOOL (LCAPI *tflcBlockPurge)(HANDLE hBlock);
-typedef BOOL (LCAPI *tflcBlockSortEnts)(HANDLE hBlock);
-typedef HANDLE (LCAPI *tflcBlockAddPoint)(HANDLE hBlock, double X, double Y);
-typedef HANDLE (LCAPI *tflcBlockAddPoint2)(HANDLE hBlock, double X, double Y, int PtMode, double PtSize);
-typedef HANDLE (LCAPI *tflcBlockAddXline)(HANDLE hBlock, double X, double Y, double Angle, BOOL bRay);
-typedef HANDLE (LCAPI *tflcBlockAddXline2P)(HANDLE hBlock, double X, double Y, double X2, double Y2, BOOL bRay);
-typedef HANDLE (LCAPI *tflcBlockAddLine)(HANDLE hBlock, double X1, double Y1, double X2, double Y2);
-typedef HANDLE (LCAPI *tflcBlockAddLineDir)(HANDLE hBlock, double X, double Y, double Angle, double Dist);
-typedef HANDLE (LCAPI *tflcBlockAddLineTan)(HANDLE hBlock, HANDLE hEnt1, HANDLE hEnt2, int Mode);
-typedef HANDLE (LCAPI *tflcBlockAddPolyline)(HANDLE hBlock, int FitType, BOOL bClosed, BOOL bFilled);
-typedef HANDLE (LCAPI *tflcBlockAddRect)(HANDLE hBlock, double Xc, double Yc, double Width, double Height, double Angle, BOOL bFilled);
-typedef HANDLE (LCAPI *tflcBlockAddRect2)(HANDLE hBlock, double Left, double Bottom, double Width, double Height, double Rad, BOOL bFilled);
-typedef HANDLE (LCAPI *tflcBlockAddCircle)(HANDLE hBlock, double X, double Y, double Radius, BOOL bFilled);
-typedef HANDLE (LCAPI *tflcBlockAddArc)(HANDLE hBlock, double X, double Y, double Radius, double StartAngle, double ArcAngle);
-typedef HANDLE (LCAPI *tflcBlockAddArc3P)(HANDLE hBlock, double X1, double Y1, double X2, double Y2, double X3, double Y3);
-typedef HANDLE (LCAPI *tflcBlockAddEllipse)(HANDLE hBlock, double X, double Y, double R1, double R2, double RotAngle, double StartAngle, double ArcAngle);
-typedef HANDLE (LCAPI *tflcBlockAddText)(HANDLE hBlock, LPCWSTR szText, double X, double Y);
-typedef HANDLE (LCAPI *tflcBlockAddText2)(HANDLE hBlock, LPCWSTR szText, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique);
-typedef HANDLE (LCAPI *tflcBlockAddTextWin)(HANDLE hBlock, LPCWSTR szText, double X, double Y);
-typedef HANDLE (LCAPI *tflcBlockAddTextWin2)(HANDLE hBlock, LPCWSTR szText, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique);
-typedef HANDLE (LCAPI *tflcBlockAddMText)(HANDLE hBlock, LPCWSTR szText, double X, double Y, double WrapWidth, int Align, double RotAngle, double H, double WScale);
-typedef HANDLE (LCAPI *tflcBlockAddArcText)(HANDLE hBlock, LPCWSTR szText, double X, double Y, double Radius, double StartAngle, BOOL bClockwise, double H, double WScale);
-typedef HANDLE (LCAPI *tflcBlockAddBlockRef)(HANDLE hBlock, HANDLE hRefBlock, double X, double Y, double Scal, double Angle);
-typedef HANDLE (LCAPI *tflcBlockAddBlockRefID)(HANDLE hBlock, int idRefBlock, double X, double Y, double Scal, double Angle);
-typedef HANDLE (LCAPI *tflcBlockAddBlockRefIDH)(HANDLE hBlock, LPCWSTR szIdRefBlock, double X, double Y, double Scal, double Angle);
-typedef HANDLE (LCAPI *tflcBlockAddImageRef)(HANDLE hBlock, HANDLE hImage, double X, double Y, double Width, double Height, BOOL bBorder);
-typedef HANDLE (LCAPI *tflcBlockAddEcw)(HANDLE hBlock, LPCWSTR szFileName);
-typedef HANDLE (LCAPI *tflcBlockAddAttDef)(HANDLE hBlock, int Mode, LPCWSTR szTag, LPCWSTR szPrompt, LPCWSTR szDefVal, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique);
-typedef HANDLE (LCAPI *tflcBlockAddHatch)(HANDLE hBlock, LPCWSTR szFileName, LPCWSTR szPatName, double Scal, double Angle);
-typedef HANDLE (LCAPI *tflcBlockAddViewport)(HANDLE hBlock, double Lef, double Bot, double Width, double Height, double DrwPntX, double DrwPntY, double DrwScale, double DrwAngle);
-typedef HANDLE (LCAPI *tflcBlockAddLeader)(HANDLE hBlock, LPCWSTR szText, double Xt, double Yt, double LandDist, double Xa, double Ya, int Attach, int Align);
-typedef HANDLE (LCAPI *tflcBlockAddDimRot)(HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, double Yt, double Angle, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockAddDimHor)(HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Yt, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockAddDimVer)(HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockAddDimAli)(HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, double Yt, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockAddDimAli2)(HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Dt, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockAddDimOrd)(HANDLE hBlock, double Xd, double Yd, double Xt, double Yt, bool bX, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockAddDimRad)(HANDLE hBlock, double Xc, double Yc, double Xr, double Yr, double Xt, double Yt, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockAddDimRad2)(HANDLE hBlock, double Xc, double Yc, double R, double Angle, double TextOff, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockAddDimDia)(HANDLE hBlock, double Xc, double Yc, double Xr, double Yr, double Xt, double Yt, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockAddDimDia2)(HANDLE hBlock, double Xc, double Yc, double R, double Angle, double TextOff, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockAddDimAng)(HANDLE hBlock, double Xc, double Yc, double X1, double Y1, double X2, double Y2, double Xa, double Ya, double TextPos, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockAddDimAng2)(HANDLE hBlock, double X1, double Y1, double X2, double Y2, double X3, double Y3, double X4, double Y4, double Xa, double Ya, double TextPos, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcBlockGetFirstEnt)(HANDLE hBlock);
-typedef HANDLE (LCAPI *tflcBlockGetNextEnt)(HANDLE hBlock, HANDLE hEnt);
-typedef HANDLE (LCAPI *tflcBlockGetLastEnt)(HANDLE hBlock);
-typedef HANDLE (LCAPI *tflcBlockGetPrevEnt)(HANDLE hBlock, HANDLE hEnt);
-typedef HANDLE (LCAPI *tflcBlockGetEntByID)(HANDLE hBlock, int Id);
-typedef HANDLE (LCAPI *tflcBlockGetEntByIDH)(HANDLE hBlock, LPCWSTR szId);
-typedef HANDLE (LCAPI *tflcBlockGetEntByKey)(HANDLE hBlock, int Key);
-typedef BOOL (LCAPI *tflcBlockUnselect)(HANDLE hBlock);
-typedef BOOL (LCAPI *tflcBlockSelectEnt)(HANDLE hBlock, HANDLE hEntity, BOOL bSelect);
-typedef BOOL (LCAPI *tflcBlockSelErase)(HANDLE hBlock);
-typedef BOOL (LCAPI *tflcBlockSelMove)(HANDLE hBlock, double dX, double dY, BOOL bCopy, BOOL bNewSelect);
-typedef BOOL (LCAPI *tflcBlockSelScale)(HANDLE hBlock, double X0, double Y0, double Scal, BOOL bCopy, BOOL bNewSelect);
-typedef BOOL (LCAPI *tflcBlockSelRotate)(HANDLE hBlock, double X0, double Y0, double Angle, BOOL bCopy, BOOL bNewSelect);
-typedef BOOL (LCAPI *tflcBlockSelMirror)(HANDLE hBlock, double X1, double Y1, double X2, double Y2, BOOL bCopy, BOOL bNewSelect);
-typedef BOOL (LCAPI *tflcBlockSelExplode)(HANDLE hBlock);
-typedef HANDLE (LCAPI *tflcBlockSelJoin)(HANDLE hBlock, double Delta);
-typedef HANDLE (LCAPI *tflcBlockGetFirstSel)(HANDLE hBlock);
-typedef HANDLE (LCAPI *tflcBlockGetNextSel)(HANDLE hBlock);
-typedef BOOL (LCAPI *tflcEntErase)(HANDLE hEnt, BOOL bErase);
-typedef BOOL (LCAPI *tflcEntMove)(HANDLE hEnt, double dX, double dY);
-typedef BOOL (LCAPI *tflcEntScale)(HANDLE hEnt, double X0, double Y0, double Scal);
-typedef BOOL (LCAPI *tflcEntRotate)(HANDLE hEnt, double X0, double Y0, double Angle);
-typedef BOOL (LCAPI *tflcEntMirror)(HANDLE hEnt, double X1, double Y1, double X2, double Y2);
-typedef BOOL (LCAPI *tflcEntExplode)(HANDLE hEnt, BOOL bSelect);
-typedef BOOL (LCAPI *tflcEntOffset)(HANDLE hEnt, double Dist);
-typedef BOOL (LCAPI *tflcEntToTop)(HANDLE hEnt);
-typedef BOOL (LCAPI *tflcEntToBottom)(HANDLE hEnt);
-typedef BOOL (LCAPI *tflcEntToAbove)(HANDLE hEnt, HANDLE hEnt2);
-typedef BOOL (LCAPI *tflcEntToUnder)(HANDLE hEnt, HANDLE hEnt2);
-typedef BOOL (LCAPI *tflcEntGetGrip)(HANDLE hEnt, int iGrip, double* pX, double* pY);
-typedef BOOL (LCAPI *tflcEntPutGrip)(HANDLE hEnt, int iGrip, double X, double Y);
-typedef BOOL (LCAPI *tflcEntUpdate)(HANDLE hEnt);
-typedef int (LCAPI *tflcIntersection)(HANDLE hEnt, HANDLE hEnt2);
-typedef BOOL (LCAPI *tflcInterGetPoint)(int iPoint, double* pX, double* pY);
-typedef HANDLE (LCAPI *tflcPlineAddVer)(HANDLE hPline, HANDLE hVer0, double X, double Y);
-typedef HANDLE (LCAPI *tflcPlineAddVer2)(HANDLE hPline, HANDLE hVer0, double X, double Y, double Param, double W0, double W1);
-typedef HANDLE (LCAPI *tflcPlineAddVerDir)(HANDLE hPline, HANDLE hVer0, double Ang, double Len);
-typedef BOOL (LCAPI *tflcPlineDeleteVer)(HANDLE hPline, HANDLE hVer);
-typedef HANDLE (LCAPI *tflcPlineGetFirstVer)(HANDLE hPline);
-typedef HANDLE (LCAPI *tflcPlineGetNextVer)(HANDLE hPline, HANDLE hVer);
-typedef HANDLE (LCAPI *tflcPlineGetLastVer)(HANDLE hPline);
-typedef HANDLE (LCAPI *tflcPlineGetPrevVer)(HANDLE hPline, HANDLE hVer);
-typedef HANDLE (LCAPI *tflcPlineGetVer)(HANDLE hPline, int Index);
-typedef HANDLE (LCAPI *tflcPlineGetVerPt)(HANDLE hPline, double X, double Y, double Delta);
-typedef HANDLE (LCAPI *tflcPlineGetSeg)(HANDLE hPline, double X, double Y, double Delta);
-typedef BOOL (LCAPI *tflcPlineReverse)(HANDLE hPline);
-typedef BOOL (LCAPI *tflcVportSetView)(HANDLE hVport, double Xcen, double Ycen, double Scale, double Angle);
-typedef BOOL (LCAPI *tflcVportFrolClear)(HANDLE hVport);
-typedef BOOL (LCAPI *tflcVportFrolAdd)(HANDLE hVport, HANDLE hLayer);
-typedef HANDLE (LCAPI *tflcVportFrolGet)(HANDLE hVport, int iLayer);
-typedef BOOL (LCAPI *tflcVportIsFrol)(HANDLE hVport, HANDLE hLayer);
-typedef HANDLE (LCAPI *tflcBlkRefAddAtt)(HANDLE hBlockRef, LPCWSTR szTag, LPCWSTR szValue);
-typedef HANDLE (LCAPI *tflcBlkRefGetFirstAtt)(HANDLE hBlockRef);
-typedef HANDLE (LCAPI *tflcBlkRefGetNextAtt)(HANDLE hBlockRef, HANDLE hAttrib);
-typedef HANDLE (LCAPI *tflcBlkRefGetAtt)(HANDLE hBlockRef, LPCWSTR szTag);
-typedef BOOL (LCAPI *tflcHatchBoundStart)(HANDLE hHatch);
-typedef BOOL (LCAPI *tflcHatchBoundPoint)(HANDLE hHatch, double X, double Y);
-typedef BOOL (LCAPI *tflcHatchBoundEndLoop)(HANDLE hHatch);
-typedef BOOL (LCAPI *tflcHatchBoundEnd)(HANDLE hHatch);
-typedef BOOL (LCAPI *tflcHatchPatStart)(HANDLE hHatch);
-typedef BOOL (LCAPI *tflcHatchPatLine)(HANDLE hHatch, double Angle, double x0, double y0, double dx, double dy, int nDash, double L0, double L1, double L2, double L3, double L4, double L5, double L6, double L7);
-typedef BOOL (LCAPI *tflcHatchPatEnd)(HANDLE hHatch);
-typedef int (LCAPI *tflcHatchGetLoopSize)(HANDLE hHatch, int iLoop);
-typedef BOOL (LCAPI *tflcHatchGetPoint)(HANDLE hHatch, int iPnt, double* pX, double* pY);
-typedef int (LCAPI *tflcRectGetPolyline)(HANDLE hRect, double* pX, double* pY, double* pBulge);
-typedef BOOL (LCAPI *tflcXlinePutDir)(HANDLE hXline, double X, double Y);
-typedef HANDLE (LCAPI *tflcCreateWindow)(HWND hWndParent, int Style, int Left, int Top, int Width, int Height);
-typedef BOOL (LCAPI *tflcDeleteWindow)(HANDLE hLcWnd);
-typedef BOOL (LCAPI *tflcWndResize)(HANDLE hLcWnd, int Left, int Top, int Width, int Height);
-typedef BOOL (LCAPI *tflcWndSelectView)(HANDLE hLcWnd, HANDLE hView);
-typedef BOOL (LCAPI *tflcWndZoomRect)(HANDLE hLcWnd, double Left, double Bottom, double Right, double Top);
-typedef BOOL (LCAPI *tflcWndZoomScale)(HANDLE hLcWnd, double Scal);
-typedef BOOL (LCAPI *tflcWndRedraw)(HANDLE hLcWnd);
-typedef BOOL (LCAPI *tflcWndSetFocus)(HANDLE hLcWnd);
-typedef BOOL (LCAPI *tflcWndExeCommand)(HANDLE hLcWnd, int Command, int CmdParam);
-typedef BOOL (LCAPI *tflcWndCoordFromDrw)(HANDLE hLcWnd, double Xdrw, double Ydrw, int* pXwin, int* pYwin);
-typedef BOOL (LCAPI *tflcWndCoordToDrw)(HANDLE hLcWnd, int Xwin, int Ywin, double* pXdrw, double* pYdrw);
-typedef BOOL (LCAPI *tflcWndGetCursorCoord)(HANDLE hLcWnd, int* pXwin, int* pYwin, double* pXdrw, double* pYdrw);
-typedef HANDLE (LCAPI *tflcWndGetEntByPoint)(HANDLE hLcWnd, int Xwin, int Ywin);
-typedef BOOL (LCAPI *tflcWndSetCmdwin)(HANDLE hLcWnd, HANDLE hCmdLine);
-typedef BOOL (LCAPI *tflcWndSetPropwin)(HANDLE hLcWnd, HANDLE hPropWnd);
-typedef BOOL (LCAPI *tflcWndOnClose)(HANDLE hLcWnd);
-typedef BOOL (LCAPI *tflcWndGetPoint)(HANDLE hLcWnd, LPCWSTR szPrompt, int SnapMode, int Index, double* pX, double* pY);
-typedef BOOL (LCAPI *tflcWndGetPointBuf)(HANDLE hLcWnd, int Index, double* pX, double* pY);
-typedef BOOL (LCAPI *tflcCoordDrwToWnd)(HANDLE hLcWnd, double Xdrw, double Ydrw, int* pXwin, int* pYwin);
-typedef BOOL (LCAPI *tflcCoordWndToDrw)(HANDLE hLcWnd, int Xwin, int Ywin, double* pXdrw, double* pYdrw);
-typedef BOOL (LCAPI *tflcColorIsRGB)(LPCWSTR szColor);
-typedef int (LCAPI *tflcColorGetRed)(LPCWSTR szColor);
-typedef int (LCAPI *tflcColorGetGreen)(LPCWSTR szColor);
-typedef int (LCAPI *tflcColorGetBlue)(LPCWSTR szColor);
-typedef int (LCAPI *tflcColorGetIndex)(LPCWSTR szColor);
-typedef BOOL (LCAPI *tflcColorToVal)(LPCWSTR szColor, int* pbRGB, int* pIndex, int* pR, int* pG, int* pB);
-typedef BOOL (LCAPI *tflcColorSetPalette)(int Index, int R, int G, int B);
-typedef BOOL (LCAPI *tflcColorGetPalette)(int Index, int* pR, int* pG, int* pB);
-typedef HANDLE (LCAPI *tflcCreateCmdwin)(HWND hWndParent, int Left, int Top, int Width, int Height);
-typedef BOOL (LCAPI *tflcCmdwinResize)(HANDLE hCmdLine, int Left, int Top, int Width, int Height);
-typedef HANDLE (LCAPI *tflcCreatePropwin)(HWND hWndParent, int Left, int Top, int Width, int Height);
-typedef BOOL (LCAPI *tflcPropwinResize)(HANDLE hPropWnd, int Left, int Top, int Width, int Height);
-typedef BOOL (LCAPI *tflcPropwinUpdate)(HANDLE hPropWnd, BOOL bSelChanged);
-typedef int (LCAPI *tflcGetErrorCode)();
-typedef LPCWSTR (LCAPI *tflcGetErrorStr)();
-typedef int (LCAPI *tflcExtractPreview)(LPCWSTR szFileName, HGLOBAL hGlob, int MaxSize);
-typedef BOOL (LCAPI *tflcExtractFileInfo)(LPCWSTR szFileName, WCHAR* szGuid, WCHAR* szComment, int* pInt0, int* pInt1);
-typedef BOOL (LCAPI *tflcGetClientSize)(HWND hWnd, int* pWidth, int* pHeight);
-typedef LPCWSTR (LCAPI *tflcGetFileName)(HWND hWnd, int Mode);
-typedef LPCWSTR (LCAPI *tflcGetValue)(HWND hWnd, int Lef, int Top, LPCWSTR szCaption, LPCWSTR szPrompt, LPCWSTR szValue);
-typedef void (LCAPI *tflcTextOut)(HDC hDC, int x, int y, LPCWSTR szText, int ColorRGB);
-typedef BOOL (LCAPI *tflcFilletSetLines)(double L1x0, double L1y0, double L1x1, double L1y1, double L2x0, double L2y0, double L2x1, double L2y1);
-typedef BOOL (LCAPI *tflcFillet)(double Rad, double Bis, double Tang);
-typedef BOOL (LCAPI *tflcFilletGetPoint)(int iPnt, double* pX, double* pY);
-typedef HANDLE (LCAPI *tflcCreateCommand)(HANDLE hLcWnd, int Id, LPCWSTR szName, BOOL bNeedSel);
-typedef BOOL (LCAPI *tflcCmdExit)();
-typedef BOOL (LCAPI *tflcCmdPrompt)(HANDLE hCmd, LPCWSTR szText);
-typedef HANDLE (LCAPI *tflcCmdGetEntByPoint)(HANDLE hCmd, int Xwnd, int Ywnd);
-typedef BOOL (LCAPI *tflcCmdSelectEnt)(HANDLE hCmd, HANDLE hEntity, BOOL bSelect);
-typedef BOOL (LCAPI *tflcCmdRedraw)(HANDLE hCmd);
-typedef BOOL (LCAPI *tflcCmdSetFocus)(HANDLE hCmd);
-typedef BOOL (LCAPI *tflcCmdRegen)(HANDLE hCmd, HANDLE hEnt);
-typedef BOOL (LCAPI *tflcCmdClearPoints)(HANDLE hCmd);
-typedef BOOL (LCAPI *tflcCmdAddPoint)(HANDLE hCmd, int Id, double X, double Y);
-typedef BOOL (LCAPI *tflcCmdGetPoint)(HANDLE hCmd, int Id, double* pX, double* pY);
-typedef BOOL (LCAPI *tflcCmdSetBasePoint)(HANDLE hCmd, BOOL bEnable, double X, double Y);
-typedef BOOL (LCAPI *tflcCmdDrawLine)(HANDLE hCmd, double X0, double Y0, double X1, double Y1);
-typedef BOOL (LCAPI *tflcCmdDrawPickbox)(HANDLE hCmd, int Xwnd, int Ywnd);
-typedef BOOL (LCAPI *tflcCmdEqualPoints)(HANDLE hCmd, double X0, double Y0, double X1, double Y1, int Delta);
-typedef void (LCAPI *tflcSurfInitialize)(int MaxSectPnt, double AngStep);
-typedef void (LCAPI *tflcSurfUnInitialize)();
-typedef void (LCAPI *tflcSurfClearTriangles)();
-typedef BOOL (LCAPI *tflcSurfAddTriangle)(double X0, double Y0, double Z0, double X1, double Y1, double Z1, double X2, double Y2, double Z2);
-typedef BOOL (LCAPI *tflcSurfGetZ)(double X, double Y, double* pZ);
-typedef BOOL (LCAPI *tflcSurfGetZ_dbg)(double X, double Y, double* pZ, double* pX0, double* pY0, double* pZ0, double* pX1, double* pY1, double* pZ1, double* pX2, double* pY2, double* pZ2);
-typedef void (LCAPI *tflcSurfClearPlan)();
-typedef BOOL (LCAPI *tflcSurfAddPlanVer)(double X, double Y, double Bulge);
-typedef int (LCAPI *tflcSurfMakeSection)();
-typedef BOOL (LCAPI *tflcSurfGetSectPoint)(int iPnt, double* pX, double* pY, double* pZ);
-typedef void (LCAPI *tflcCrossSetTolerance)(double Zero1, double One1, double Zero2, double One2, double NearPt, double Clas, double CutGr, double RigPt);
-typedef BOOL (LCAPI *tflcCrossClear)();
-typedef BOOL (LCAPI *tflcCrossBegin)(int PlineType);
-typedef BOOL (LCAPI *tflcCrossAddPoint)(double X, double Y);
-typedef BOOL (LCAPI *tflcCrossEnd)();
-typedef int (LCAPI *tflcCrossCalcArea)();
-typedef int (LCAPI *tflcCrossCalcArea2)(HANDLE hDrw, int GroundKey, int RoadKey, int LinkKey);
-typedef BOOL (LCAPI *tflcCrossGetArea)(int iArea, double* pAreaVal, int* pNumPnts);
-typedef BOOL (LCAPI *tflcCrossGetAreaPoint)(int iArea, int iPnt, double* pX, double* pY);
-typedef void (LCAPI *tflcEventReturnCode)(int code);
-typedef void (LCAPI *tflcEventsEnable)(BOOL bEnable);
-typedef void (LCAPI *tflcOnEventMouseMove)(F_MOUSEMOVE pFunc);
-typedef void (LCAPI *tflcOnEventMouseDown)(F_MOUSEDOWN pFunc);
-typedef void (LCAPI *tflcOnEventMouseUp)(F_MOUSEUP pFunc);
-typedef void (LCAPI *tflcOnEventMouseDblClk)(F_MOUSEDBLCLK pFunc);
-typedef void (LCAPI *tflcOnEventMouseSnap)(F_MOUSESNAP pFunc);
-typedef void (LCAPI *tflcOnEventMouseLeave)(F_MOUSELEAVE pFunc);
-typedef void (LCAPI *tflcOnEventMouseWheel)(F_MOUSEWHEEL pFunc);
-typedef void (LCAPI *tflcOnEventKeyDown)(F_KEYDOWN pFunc);
-typedef void (LCAPI *tflcOnEventPaint)(F_PAINT pFunc);
-typedef void (LCAPI *tflcOnEventZoom)(F_ZOOM pFunc);
-typedef void (LCAPI *tflcOnEventSelectView)(F_SELECTVIEW pFunc);
-typedef void (LCAPI *tflcOnEventGetPoint)(F_GETPOINT pFunc);
-typedef void (LCAPI *tflcOnEventAddCommand)(F_ADDCOMMAND pFunc);
-typedef void (LCAPI *tflcOnEventCmdStart)(F_CMD_START pFunc);
-typedef void (LCAPI *tflcOnEventCmdFinish)(F_CMD_FINISH pFunc);
-typedef void (LCAPI *tflcOnEventCmdMouseDown)(F_CMD_MOUSEDOWN pFunc);
-typedef void (LCAPI *tflcOnEventCmdMouseUp)(F_CMD_MOUSEUP pFunc);
-typedef void (LCAPI *tflcOnEventCmdMouseMove)(F_CMD_MOUSEMOVE pFunc);
-typedef void (LCAPI *tflcOnEventCmdString)(F_CMD_STRING pFunc);
-typedef void (LCAPI *tflcOnEventAddEntity)(F_ADDENTITY pFunc);
-typedef void (LCAPI *tflcOnEventRegen)(F_REGEN pFunc);
-typedef void (LCAPI *tflcOnEventFioProgress)(F_FIOPROGRESS pFunc);
-typedef void (LCAPI *tflcOnEventSelection)(F_SELECTION pFunc);
-typedef void (LCAPI *tflcOnEventPropChanged)(F_PROPCHANGED pFunc);
-typedef void (LCAPI *tflcOnEventGripSelect)(F_GRIPSELECT pFunc);
-typedef void (LCAPI *tflcOnEventGripMove)(F_GRIPMOVE pFunc);
-typedef void (LCAPI *tflcOnEventEntErase)(F_ENTERASE pFunc);
-typedef void (LCAPI *tflcOnEventEntMove)(F_ENTMOVE pFunc);
-typedef void (LCAPI *tflcOnEventEntRotate)(F_ENTROTATE pFunc);
-typedef void (LCAPI *tflcOnEventEntScale)(F_ENTSCALE pFunc);
-typedef void (LCAPI *tflcOnEventEntMirror)(F_ENTMIRROR pFunc);
-typedef void (LCAPI *tflcOnEventEntProp)(F_ENTPROP pFunc);
-typedef void (LCAPI *tflcOnEventHelp)(F_HELP pFunc);
-typedef void (LCAPI *tflcOnEventAddStr)(F_ADDSTR pFunc);
-typedef void (LCAPI *tflcOnEventFontReplace)(F_FONTREPLACE pFunc);
+//-------------------------------------------------
+void lcFreeLib ()
+{
+  if (ghLibInst){
+    FreeLibrary( ghLibInst );
+    ghLibInst = 0;
+  }
+}
+
 
 //--------------
-BOOL LCAPI lcInitialize (LPCWSTR szConfigDir)
+void LCAPI lcEventSetProc (int EventType, F_LCEVENT pFunc, int Prm1, HANDLE Prm2)
 {
-  tflcInitialize pflcInitialize;
-  pflcInitialize = (tflcInitialize)GetProcAddress( ghLibInst, "lcInitialize" );
+  if (pflcEventSetProc){
+    (*pflcEventSetProc)(EventType, pFunc, Prm1, Prm2);
+  }
+}
+
+
+//--------------
+void LCAPI lcEventReturnCode (int code)
+{
+  if (pflcEventReturnCode){
+    (*pflcEventReturnCode)(code);
+  }
+}
+
+
+//--------------
+BOOL LCAPI lcEventsEnable (BOOL b)
+{
+  if (pflcEventsEnable){
+    return (*pflcEventsEnable)(b);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcInitialize ()
+{
   if (pflcInitialize){
-    return (*pflcInitialize)(szConfigDir);
+    return (*pflcInitialize)();
   }
   return 0;
 }
@@ -340,8 +4864,6 @@ BOOL LCAPI lcInitialize (LPCWSTR szConfigDir)
 //--------------
 BOOL LCAPI lcUninitialize (BOOL bSaveConfig)
 {
-  tflcUninitialize pflcUninitialize;
-  pflcUninitialize = (tflcUninitialize)GetProcAddress( ghLibInst, "lcUninitialize" );
   if (pflcUninitialize){
     return (*pflcUninitialize)(bSaveConfig);
   }
@@ -350,70 +4872,8 @@ BOOL LCAPI lcUninitialize (BOOL bSaveConfig)
 
 
 //--------------
-LPCWSTR LCAPI lcCfgGetValue (HANDLE hCfg, LPCWSTR szTag)
-{
-  tflcCfgGetValue pflcCfgGetValue;
-  pflcCfgGetValue = (tflcCfgGetValue)GetProcAddress( ghLibInst, "lcCfgGetValue" );
-  if (pflcCfgGetValue){
-    return (*pflcCfgGetValue)(hCfg, szTag);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcCfgSetValue (HANDLE hCfg, LPCWSTR szTagValue)
-{
-  tflcCfgSetValue pflcCfgSetValue;
-  pflcCfgSetValue = (tflcCfgSetValue)GetProcAddress( ghLibInst, "lcCfgSetValue" );
-  if (pflcCfgSetValue){
-    return (*pflcCfgSetValue)(hCfg, szTagValue);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcAddFontRes (HANDLE hModule, int idResource, LPCWSTR szFontName)
-{
-  tflcAddFontRes pflcAddFontRes;
-  pflcAddFontRes = (tflcAddFontRes)GetProcAddress( ghLibInst, "lcAddFontRes" );
-  if (pflcAddFontRes){
-    return (*pflcAddFontRes)(hModule, idResource, szFontName);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcAddFontFile (LPCWSTR szFilename, LPCWSTR szFontName)
-{
-  tflcAddFontFile pflcAddFontFile;
-  pflcAddFontFile = (tflcAddFontFile)GetProcAddress( ghLibInst, "lcAddFontFile" );
-  if (pflcAddFontFile){
-    return (*pflcAddFontFile)(szFilename, szFontName);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcAddFontBin (HANDLE hData, LPCWSTR szFontName)
-{
-  tflcAddFontBin pflcAddFontBin;
-  pflcAddFontBin = (tflcAddFontBin)GetProcAddress( ghLibInst, "lcAddFontBin" );
-  if (pflcAddFontBin){
-    return (*pflcAddFontBin)(hData, szFontName);
-  }
-  return 0;
-}
-
-
-//--------------
 BOOL LCAPI lcStrAdd (LPCWSTR szTag, LPCWSTR szText)
 {
-  tflcStrAdd pflcStrAdd;
-  pflcStrAdd = (tflcStrAdd)GetProcAddress( ghLibInst, "lcStrAdd" );
   if (pflcStrAdd){
     return (*pflcStrAdd)(szTag, szText);
   }
@@ -424,8 +4884,6 @@ BOOL LCAPI lcStrAdd (LPCWSTR szTag, LPCWSTR szText)
 //--------------
 BOOL LCAPI lcStrSet (LPCWSTR szTag, LPCWSTR szText)
 {
-  tflcStrSet pflcStrSet;
-  pflcStrSet = (tflcStrSet)GetProcAddress( ghLibInst, "lcStrSet" );
   if (pflcStrSet){
     return (*pflcStrSet)(szTag, szText);
   }
@@ -436,8 +4894,6 @@ BOOL LCAPI lcStrSet (LPCWSTR szTag, LPCWSTR szText)
 //--------------
 LPCWSTR LCAPI lcStrGet (LPCWSTR szTag)
 {
-  tflcStrGet pflcStrGet;
-  pflcStrGet = (tflcStrGet)GetProcAddress( ghLibInst, "lcStrGet" );
   if (pflcStrGet){
     return (*pflcStrGet)(szTag);
   }
@@ -448,8 +4904,6 @@ LPCWSTR LCAPI lcStrGet (LPCWSTR szTag)
 //--------------
 BOOL LCAPI lcStrFileLoad (LPCWSTR szFileName)
 {
-  tflcStrFileLoad pflcStrFileLoad;
-  pflcStrFileLoad = (tflcStrFileLoad)GetProcAddress( ghLibInst, "lcStrFileLoad" );
   if (pflcStrFileLoad){
     return (*pflcStrFileLoad)(szFileName);
   }
@@ -458,12 +4912,10 @@ BOOL LCAPI lcStrFileLoad (LPCWSTR szFileName)
 
 
 //--------------
-BOOL LCAPI lcStrFileSave (LPCWSTR szFileName, LPCWSTR szLanguage, BOOL bInit)
+BOOL LCAPI lcStrFileSave (LPCWSTR szFileName, LPCWSTR szLanguage)
 {
-  tflcStrFileSave pflcStrFileSave;
-  pflcStrFileSave = (tflcStrFileSave)GetProcAddress( ghLibInst, "lcStrFileSave" );
   if (pflcStrFileSave){
-    return (*pflcStrFileSave)(szFileName, szLanguage, bInit);
+    return (*pflcStrFileSave)(szFileName, szLanguage);
   }
   return 0;
 }
@@ -472,8 +4924,6 @@ BOOL LCAPI lcStrFileSave (LPCWSTR szFileName, LPCWSTR szLanguage, BOOL bInit)
 //--------------
 BOOL LCAPI lcPropGetBool (HANDLE hObject, int idProp)
 {
-  tflcPropGetBool pflcPropGetBool;
-  pflcPropGetBool = (tflcPropGetBool)GetProcAddress( ghLibInst, "lcPropGetBool" );
   if (pflcPropGetBool){
     return (*pflcPropGetBool)(hObject, idProp);
   }
@@ -484,8 +4934,6 @@ BOOL LCAPI lcPropGetBool (HANDLE hObject, int idProp)
 //--------------
 int LCAPI lcPropGetInt (HANDLE hObject, int idProp)
 {
-  tflcPropGetInt pflcPropGetInt;
-  pflcPropGetInt = (tflcPropGetInt)GetProcAddress( ghLibInst, "lcPropGetInt" );
   if (pflcPropGetInt){
     return (*pflcPropGetInt)(hObject, idProp);
   }
@@ -496,8 +4944,6 @@ int LCAPI lcPropGetInt (HANDLE hObject, int idProp)
 //--------------
 double LCAPI lcPropGetFloat (HANDLE hObject, int idProp)
 {
-  tflcPropGetFloat pflcPropGetFloat;
-  pflcPropGetFloat = (tflcPropGetFloat)GetProcAddress( ghLibInst, "lcPropGetFloat" );
   if (pflcPropGetFloat){
     return (*pflcPropGetFloat)(hObject, idProp);
   }
@@ -508,8 +4954,6 @@ double LCAPI lcPropGetFloat (HANDLE hObject, int idProp)
 //--------------
 LPCWSTR LCAPI lcPropGetStr (HANDLE hObject, int idProp)
 {
-  tflcPropGetStr pflcPropGetStr;
-  pflcPropGetStr = (tflcPropGetStr)GetProcAddress( ghLibInst, "lcPropGetStr" );
   if (pflcPropGetStr){
     return (*pflcPropGetStr)(hObject, idProp);
   }
@@ -518,10 +4962,38 @@ LPCWSTR LCAPI lcPropGetStr (HANDLE hObject, int idProp)
 
 
 //--------------
+int LCAPI lcPropGetStrA (HANDLE hObject, int idProp, char* szBuf, int BufSize)
+{
+  if (pflcPropGetStrA){
+    return (*pflcPropGetStrA)(hObject, idProp, szBuf, BufSize);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcPropGetStr2 (HANDLE hObject, int idProp)
+{
+  if (pflcPropGetStr2){
+    return (*pflcPropGetStr2)(hObject, idProp);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcPropGetChar (int iChar)
+{
+  if (pflcPropGetChar){
+    return (*pflcPropGetChar)(iChar);
+  }
+  return 0;
+}
+
+
+//--------------
 HANDLE LCAPI lcPropGetHandle (HANDLE hObject, int idProp)
 {
-  tflcPropGetHandle pflcPropGetHandle;
-  pflcPropGetHandle = (tflcPropGetHandle)GetProcAddress( ghLibInst, "lcPropGetHandle" );
   if (pflcPropGetHandle){
     return (*pflcPropGetHandle)(hObject, idProp);
   }
@@ -532,8 +5004,6 @@ HANDLE LCAPI lcPropGetHandle (HANDLE hObject, int idProp)
 //--------------
 BOOL LCAPI lcPropPutBool (HANDLE hObject, int idProp, BOOL bValue)
 {
-  tflcPropPutBool pflcPropPutBool;
-  pflcPropPutBool = (tflcPropPutBool)GetProcAddress( ghLibInst, "lcPropPutBool" );
   if (pflcPropPutBool){
     return (*pflcPropPutBool)(hObject, idProp, bValue);
   }
@@ -544,8 +5014,6 @@ BOOL LCAPI lcPropPutBool (HANDLE hObject, int idProp, BOOL bValue)
 //--------------
 BOOL LCAPI lcPropPutInt (HANDLE hObject, int idProp, int Value)
 {
-  tflcPropPutInt pflcPropPutInt;
-  pflcPropPutInt = (tflcPropPutInt)GetProcAddress( ghLibInst, "lcPropPutInt" );
   if (pflcPropPutInt){
     return (*pflcPropPutInt)(hObject, idProp, Value);
   }
@@ -556,8 +5024,6 @@ BOOL LCAPI lcPropPutInt (HANDLE hObject, int idProp, int Value)
 //--------------
 BOOL LCAPI lcPropPutFloat (HANDLE hObject, int idProp, double Value)
 {
-  tflcPropPutFloat pflcPropPutFloat;
-  pflcPropPutFloat = (tflcPropPutFloat)GetProcAddress( ghLibInst, "lcPropPutFloat" );
   if (pflcPropPutFloat){
     return (*pflcPropPutFloat)(hObject, idProp, Value);
   }
@@ -568,8 +5034,6 @@ BOOL LCAPI lcPropPutFloat (HANDLE hObject, int idProp, double Value)
 //--------------
 BOOL LCAPI lcPropPutStr (HANDLE hObject, int idProp, LPCWSTR szValue)
 {
-  tflcPropPutStr pflcPropPutStr;
-  pflcPropPutStr = (tflcPropPutStr)GetProcAddress( ghLibInst, "lcPropPutStr" );
   if (pflcPropPutStr){
     return (*pflcPropPutStr)(hObject, idProp, szValue);
   }
@@ -580,8 +5044,6 @@ BOOL LCAPI lcPropPutStr (HANDLE hObject, int idProp, LPCWSTR szValue)
 //--------------
 BOOL LCAPI lcPropPutHandle (HANDLE hObject, int idProp, HANDLE hValue)
 {
-  tflcPropPutHandle pflcPropPutHandle;
-  pflcPropPutHandle = (tflcPropPutHandle)GetProcAddress( ghLibInst, "lcPropPutHandle" );
   if (pflcPropPutHandle){
     return (*pflcPropPutHandle)(hObject, idProp, hValue);
   }
@@ -590,1896 +5052,10 @@ BOOL LCAPI lcPropPutHandle (HANDLE hObject, int idProp, HANDLE hValue)
 
 
 //--------------
-HANDLE LCAPI lcCreateDrawing ()
+HANDLE LCAPI lcCreateWindow (HWND hWndParent, int Style)
 {
-  tflcCreateDrawing pflcCreateDrawing;
-  pflcCreateDrawing = (tflcCreateDrawing)GetProcAddress( ghLibInst, "lcCreateDrawing" );
-  if (pflcCreateDrawing){
-    return (*pflcCreateDrawing)();
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcDeleteDrawing (HANDLE hDrw)
-{
-  tflcDeleteDrawing pflcDeleteDrawing;
-  pflcDeleteDrawing = (tflcDeleteDrawing)GetProcAddress( ghLibInst, "lcDeleteDrawing" );
-  if (pflcDeleteDrawing){
-    return (*pflcDeleteDrawing)(hDrw);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcDrwNew (HANDLE hDrw, LPCWSTR szFileName, HANDLE hLcWnd)
-{
-  tflcDrwNew pflcDrwNew;
-  pflcDrwNew = (tflcDrwNew)GetProcAddress( ghLibInst, "lcDrwNew" );
-  if (pflcDrwNew){
-    return (*pflcDrwNew)(hDrw, szFileName, hLcWnd);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcDrwNewT (HANDLE hDrw, LPCWSTR szFileName, LPCWSTR szTemplate, HANDLE hLcWnd)
-{
-  tflcDrwNewT pflcDrwNewT;
-  pflcDrwNewT = (tflcDrwNewT)GetProcAddress( ghLibInst, "lcDrwNewT" );
-  if (pflcDrwNewT){
-    return (*pflcDrwNewT)(hDrw, szFileName, szTemplate, hLcWnd);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcDrwLoad (HANDLE hDrw, LPCWSTR szFileName, HWND hWnd, HANDLE hLcWnd)
-{
-  tflcDrwLoad pflcDrwLoad;
-  pflcDrwLoad = (tflcDrwLoad)GetProcAddress( ghLibInst, "lcDrwLoad" );
-  if (pflcDrwLoad){
-    return (*pflcDrwLoad)(hDrw, szFileName, hWnd, hLcWnd);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcDrwSave (HANDLE hDrw, LPCWSTR szFileName, BOOL bBak, HWND hWnd)
-{
-  tflcDrwSave pflcDrwSave;
-  pflcDrwSave = (tflcDrwSave)GetProcAddress( ghLibInst, "lcDrwSave" );
-  if (pflcDrwSave){
-    return (*pflcDrwSave)(hDrw, szFileName, bBak, hWnd);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcDrwPurge (HANDLE hDrw)
-{
-  tflcDrwPurge pflcDrwPurge;
-  pflcDrwPurge = (tflcDrwPurge)GetProcAddress( ghLibInst, "lcDrwPurge" );
-  if (pflcDrwPurge){
-    return (*pflcDrwPurge)(hDrw);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcDrwRegenViews (HANDLE hDrw, HANDLE hEnt)
-{
-  tflcDrwRegenViews pflcDrwRegenViews;
-  pflcDrwRegenViews = (tflcDrwRegenViews)GetProcAddress( ghLibInst, "lcDrwRegenViews" );
-  if (pflcDrwRegenViews){
-    return (*pflcDrwRegenViews)(hDrw, hEnt);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcDrwSortObjects (HANDLE hDrw, int ObjType)
-{
-  tflcDrwSortObjects pflcDrwSortObjects;
-  pflcDrwSortObjects = (tflcDrwSortObjects)GetProcAddress( ghLibInst, "lcDrwSortObjects" );
-  if (pflcDrwSortObjects){
-    return (*pflcDrwSortObjects)(hDrw, ObjType);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcDrwClearXData (HANDLE hDrw, int ObjType, int Mode)
-{
-  tflcDrwClearXData pflcDrwClearXData;
-  pflcDrwClearXData = (tflcDrwClearXData)GetProcAddress( ghLibInst, "lcDrwClearXData" );
-  if (pflcDrwClearXData){
-    return (*pflcDrwClearXData)(hDrw, ObjType, Mode);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcDrwResolveBlocks (HANDLE hDrw, WCHAR* szError)
-{
-  tflcDrwResolveBlocks pflcDrwResolveBlocks;
-  pflcDrwResolveBlocks = (tflcDrwResolveBlocks)GetProcAddress( ghLibInst, "lcDrwResolveBlocks" );
-  if (pflcDrwResolveBlocks){
-    return (*pflcDrwResolveBlocks)(hDrw, szError);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwAddLayer (HANDLE hDrw, LPCWSTR szName, LPCWSTR szColor, HANDLE hLtype, int Lweight)
-{
-  tflcDrwAddLayer pflcDrwAddLayer;
-  pflcDrwAddLayer = (tflcDrwAddLayer)GetProcAddress( ghLibInst, "lcDrwAddLayer" );
-  if (pflcDrwAddLayer){
-    return (*pflcDrwAddLayer)(hDrw, szName, szColor, hLtype, Lweight);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwAddLinetype (HANDLE hDrw, LPCWSTR szName, LPCWSTR szDefinition)
-{
-  tflcDrwAddLinetype pflcDrwAddLinetype;
-  pflcDrwAddLinetype = (tflcDrwAddLinetype)GetProcAddress( ghLibInst, "lcDrwAddLinetype" );
-  if (pflcDrwAddLinetype){
-    return (*pflcDrwAddLinetype)(hDrw, szName, szDefinition);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwAddLinetypeF (HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, LPCWSTR szLtypeName)
-{
-  tflcDrwAddLinetypeF pflcDrwAddLinetypeF;
-  pflcDrwAddLinetypeF = (tflcDrwAddLinetypeF)GetProcAddress( ghLibInst, "lcDrwAddLinetypeF" );
-  if (pflcDrwAddLinetypeF){
-    return (*pflcDrwAddLinetypeF)(hDrw, szName, szFileName, szLtypeName);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwAddTextStyle (HANDLE hDrw, LPCWSTR szName, LPCWSTR szFontName)
-{
-  tflcDrwAddTextStyle pflcDrwAddTextStyle;
-  pflcDrwAddTextStyle = (tflcDrwAddTextStyle)GetProcAddress( ghLibInst, "lcDrwAddTextStyle" );
-  if (pflcDrwAddTextStyle){
-    return (*pflcDrwAddTextStyle)(hDrw, szName, szFontName);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwAddDimStyle (HANDLE hDrw, LPCWSTR szName)
-{
-  tflcDrwAddDimStyle pflcDrwAddDimStyle;
-  pflcDrwAddDimStyle = (tflcDrwAddDimStyle)GetProcAddress( ghLibInst, "lcDrwAddDimStyle" );
-  if (pflcDrwAddDimStyle){
-    return (*pflcDrwAddDimStyle)(hDrw, szName);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwAddImage (HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName)
-{
-  tflcDrwAddImage pflcDrwAddImage;
-  pflcDrwAddImage = (tflcDrwAddImage)GetProcAddress( ghLibInst, "lcDrwAddImage" );
-  if (pflcDrwAddImage){
-    return (*pflcDrwAddImage)(hDrw, szName, szFileName);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwAddBlock (HANDLE hDrw, LPCWSTR szName, double X, double Y)
-{
-  tflcDrwAddBlock pflcDrwAddBlock;
-  pflcDrwAddBlock = (tflcDrwAddBlock)GetProcAddress( ghLibInst, "lcDrwAddBlock" );
-  if (pflcDrwAddBlock){
-    return (*pflcDrwAddBlock)(hDrw, szName, X, Y);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwAddBlockFromFile (HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, int Overwrite, HWND hwParent)
-{
-  tflcDrwAddBlockFromFile pflcDrwAddBlockFromFile;
-  pflcDrwAddBlockFromFile = (tflcDrwAddBlockFromFile)GetProcAddress( ghLibInst, "lcDrwAddBlockFromFile" );
-  if (pflcDrwAddBlockFromFile){
-    return (*pflcDrwAddBlockFromFile)(hDrw, szName, szFileName, Overwrite, hwParent);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwAddBlockFromDrw (HANDLE hDrw, LPCWSTR szName, HANDLE hDrw2, int Overwrite, HWND hwParent)
-{
-  tflcDrwAddBlockFromDrw pflcDrwAddBlockFromDrw;
-  pflcDrwAddBlockFromDrw = (tflcDrwAddBlockFromDrw)GetProcAddress( ghLibInst, "lcDrwAddBlockFromDrw" );
-  if (pflcDrwAddBlockFromDrw){
-    return (*pflcDrwAddBlockFromDrw)(hDrw, szName, hDrw2, Overwrite, hwParent);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwAddBlockFile (HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, int Overwrite, HWND hwParent)
-{
-  tflcDrwAddBlockFile pflcDrwAddBlockFile;
-  pflcDrwAddBlockFile = (tflcDrwAddBlockFile)GetProcAddress( ghLibInst, "lcDrwAddBlockFile" );
-  if (pflcDrwAddBlockFile){
-    return (*pflcDrwAddBlockFile)(hDrw, szName, szFileName, Overwrite, hwParent);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwAddViewPaper (HANDLE hDrw, LPCWSTR szName, int PaperSize, int Orient, double Width, double Height)
-{
-  tflcDrwAddViewPaper pflcDrwAddViewPaper;
-  pflcDrwAddViewPaper = (tflcDrwAddViewPaper)GetProcAddress( ghLibInst, "lcDrwAddViewPaper" );
-  if (pflcDrwAddViewPaper){
-    return (*pflcDrwAddViewPaper)(hDrw, szName, PaperSize, Orient, Width, Height);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcDrwDeleteObject (HANDLE hDrw, HANDLE hObject)
-{
-  tflcDrwDeleteObject pflcDrwDeleteObject;
-  pflcDrwDeleteObject = (tflcDrwDeleteObject)GetProcAddress( ghLibInst, "lcDrwDeleteObject" );
-  if (pflcDrwDeleteObject){
-    return (*pflcDrwDeleteObject)(hDrw, hObject);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwGetFirstObject (HANDLE hDrw, int ObjType)
-{
-  tflcDrwGetFirstObject pflcDrwGetFirstObject;
-  pflcDrwGetFirstObject = (tflcDrwGetFirstObject)GetProcAddress( ghLibInst, "lcDrwGetFirstObject" );
-  if (pflcDrwGetFirstObject){
-    return (*pflcDrwGetFirstObject)(hDrw, ObjType);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwGetNextObject (HANDLE hDrw, HANDLE hObject)
-{
-  tflcDrwGetNextObject pflcDrwGetNextObject;
-  pflcDrwGetNextObject = (tflcDrwGetNextObject)GetProcAddress( ghLibInst, "lcDrwGetNextObject" );
-  if (pflcDrwGetNextObject){
-    return (*pflcDrwGetNextObject)(hDrw, hObject);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwGetObjectByID (HANDLE hDrw, int ObjType, int Id)
-{
-  tflcDrwGetObjectByID pflcDrwGetObjectByID;
-  pflcDrwGetObjectByID = (tflcDrwGetObjectByID)GetProcAddress( ghLibInst, "lcDrwGetObjectByID" );
-  if (pflcDrwGetObjectByID){
-    return (*pflcDrwGetObjectByID)(hDrw, ObjType, Id);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwGetObjectByIDH (HANDLE hDrw, int ObjType, LPCWSTR szId)
-{
-  tflcDrwGetObjectByIDH pflcDrwGetObjectByIDH;
-  pflcDrwGetObjectByIDH = (tflcDrwGetObjectByIDH)GetProcAddress( ghLibInst, "lcDrwGetObjectByIDH" );
-  if (pflcDrwGetObjectByIDH){
-    return (*pflcDrwGetObjectByIDH)(hDrw, ObjType, szId);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwGetObjectByName (HANDLE hDrw, int ObjType, LPCWSTR szName)
-{
-  tflcDrwGetObjectByName pflcDrwGetObjectByName;
-  pflcDrwGetObjectByName = (tflcDrwGetObjectByName)GetProcAddress( ghLibInst, "lcDrwGetObjectByName" );
-  if (pflcDrwGetObjectByName){
-    return (*pflcDrwGetObjectByName)(hDrw, ObjType, szName);
-  }
-  return 0;
-}
-
-
-//--------------
-int LCAPI lcDrwCountObjects (HANDLE hDrw, int ObjType)
-{
-  tflcDrwCountObjects pflcDrwCountObjects;
-  pflcDrwCountObjects = (tflcDrwCountObjects)GetProcAddress( ghLibInst, "lcDrwCountObjects" );
-  if (pflcDrwCountObjects){
-    return (*pflcDrwCountObjects)(hDrw, ObjType);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwGetViewByBlock (HANDLE hDrw, HANDLE hBlock)
-{
-  tflcDrwGetViewByBlock pflcDrwGetViewByBlock;
-  pflcDrwGetViewByBlock = (tflcDrwGetViewByBlock)GetProcAddress( ghLibInst, "lcDrwGetViewByBlock" );
-  if (pflcDrwGetViewByBlock){
-    return (*pflcDrwGetViewByBlock)(hDrw, hBlock);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwGetEntByID (HANDLE hDrw, int Id)
-{
-  tflcDrwGetEntByID pflcDrwGetEntByID;
-  pflcDrwGetEntByID = (tflcDrwGetEntByID)GetProcAddress( ghLibInst, "lcDrwGetEntByID" );
-  if (pflcDrwGetEntByID){
-    return (*pflcDrwGetEntByID)(hDrw, Id);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwGetEntByIDH (HANDLE hDrw, LPCWSTR szId)
-{
-  tflcDrwGetEntByIDH pflcDrwGetEntByIDH;
-  pflcDrwGetEntByIDH = (tflcDrwGetEntByIDH)GetProcAddress( ghLibInst, "lcDrwGetEntByIDH" );
-  if (pflcDrwGetEntByIDH){
-    return (*pflcDrwGetEntByIDH)(hDrw, szId);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcDrwGetEntByKey (HANDLE hDrw, int Key)
-{
-  tflcDrwGetEntByKey pflcDrwGetEntByKey;
-  pflcDrwGetEntByKey = (tflcDrwGetEntByKey)GetProcAddress( ghLibInst, "lcDrwGetEntByKey" );
-  if (pflcDrwGetEntByKey){
-    return (*pflcDrwGetEntByKey)(hDrw, Key);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcViewSetRect (HANDLE hView, double Xcen, double Ycen, double Width, double Height)
-{
-  tflcViewSetRect pflcViewSetRect;
-  pflcViewSetRect = (tflcViewSetRect)GetProcAddress( ghLibInst, "lcViewSetRect" );
-  if (pflcViewSetRect){
-    return (*pflcViewSetRect)(hView, Xcen, Ycen, Width, Height);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcViewSetRect2 (HANDLE hView, double Lef, double Bot, double Rig, double Top)
-{
-  tflcViewSetRect2 pflcViewSetRect2;
-  pflcViewSetRect2 = (tflcViewSetRect2)GetProcAddress( ghLibInst, "lcViewSetRect2" );
-  if (pflcViewSetRect2){
-    return (*pflcViewSetRect2)(hView, Lef, Bot, Rig, Top);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcViewSetLimits (HANDLE hView, double Xmin, double Ymin, double Xmax, double Ymax)
-{
-  tflcViewSetLimits pflcViewSetLimits;
-  pflcViewSetLimits = (tflcViewSetLimits)GetProcAddress( ghLibInst, "lcViewSetLimits" );
-  if (pflcViewSetLimits){
-    return (*pflcViewSetLimits)(hView, Xmin, Ymin, Xmax, Ymax);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcViewSetGrid (HANDLE hView, double X0, double Y0, double dX, double dY)
-{
-  tflcViewSetGrid pflcViewSetGrid;
-  pflcViewSetGrid = (tflcViewSetGrid)GetProcAddress( ghLibInst, "lcViewSetGrid" );
-  if (pflcViewSetGrid){
-    return (*pflcViewSetGrid)(hView, X0, Y0, dX, dY);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcViewRegen (HANDLE hView, HANDLE hEnt)
-{
-  tflcViewRegen pflcViewRegen;
-  pflcViewRegen = (tflcViewRegen)GetProcAddress( ghLibInst, "lcViewRegen" );
-  if (pflcViewRegen){
-    return (*pflcViewRegen)(hView, hEnt);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcViewSetPaperSize (HANDLE hView, int PaperSize, int Orient, double Width, double Height)
-{
-  tflcViewSetPaperSize pflcViewSetPaperSize;
-  pflcViewSetPaperSize = (tflcViewSetPaperSize)GetProcAddress( ghLibInst, "lcViewSetPaperSize" );
-  if (pflcViewSetPaperSize){
-    return (*pflcViewSetPaperSize)(hView, PaperSize, Orient, Width, Height);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcViewGetEntByPoint (HANDLE hView, double X, double Y, double Delta, int Mode)
-{
-  tflcViewGetEntByPoint pflcViewGetEntByPoint;
-  pflcViewGetEntByPoint = (tflcViewGetEntByPoint)GetProcAddress( ghLibInst, "lcViewGetEntByPoint" );
-  if (pflcViewGetEntByPoint){
-    return (*pflcViewGetEntByPoint)(hView, X, Y, Delta, Mode);
-  }
-  return 0;
-}
-
-
-//--------------
-int LCAPI lcViewGetEntsByRect (HANDLE hView, double Lef, double Bot, double Rig, double Top, BOOL bCross, int MaxNum)
-{
-  tflcViewGetEntsByRect pflcViewGetEntsByRect;
-  pflcViewGetEntsByRect = (tflcViewGetEntsByRect)GetProcAddress( ghLibInst, "lcViewGetEntsByRect" );
-  if (pflcViewGetEntsByRect){
-    return (*pflcViewGetEntsByRect)(hView, Lef, Bot, Rig, Top, bCross, MaxNum);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcViewGetEntity (int iEnt)
-{
-  tflcViewGetEntity pflcViewGetEntity;
-  pflcViewGetEntity = (tflcViewGetEntity)GetProcAddress( ghLibInst, "lcViewGetEntity" );
-  if (pflcViewGetEntity){
-    return (*pflcViewGetEntity)(iEnt);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcViewRasterize (HANDLE hView, LPCWSTR szFileName, double Lef, double Bot, double Rig, double Top, double Scale)
-{
-  tflcViewRasterize pflcViewRasterize;
-  pflcViewRasterize = (tflcViewRasterize)GetProcAddress( ghLibInst, "lcViewRasterize" );
-  if (pflcViewRasterize){
-    return (*pflcViewRasterize)(hView, szFileName, Lef, Bot, Rig, Top, Scale);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcViewDrawMarker (HANDLE hView, double X, double Y)
-{
-  tflcViewDrawMarker pflcViewDrawMarker;
-  pflcViewDrawMarker = (tflcViewDrawMarker)GetProcAddress( ghLibInst, "lcViewDrawMarker" );
-  if (pflcViewDrawMarker){
-    return (*pflcViewDrawMarker)(hView, X, Y);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcViewDrawLine (HANDLE hView, double X0, double Y0, double X1, double Y1)
-{
-  tflcViewDrawLine pflcViewDrawLine;
-  pflcViewDrawLine = (tflcViewDrawLine)GetProcAddress( ghLibInst, "lcViewDrawLine" );
-  if (pflcViewDrawLine){
-    return (*pflcViewDrawLine)(hView, X0, Y0, X1, Y1);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcViewDrawXline (HANDLE hView, double X0, double Y0, double X1, double Y1, BOOL bRay)
-{
-  tflcViewDrawXline pflcViewDrawXline;
-  pflcViewDrawXline = (tflcViewDrawXline)GetProcAddress( ghLibInst, "lcViewDrawXline" );
-  if (pflcViewDrawXline){
-    return (*pflcViewDrawXline)(hView, X0, Y0, X1, Y1, bRay);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcViewDrawRect (HANDLE hView, double X0, double Y0, double X1, double Y1)
-{
-  tflcViewDrawRect pflcViewDrawRect;
-  pflcViewDrawRect = (tflcViewDrawRect)GetProcAddress( ghLibInst, "lcViewDrawRect" );
-  if (pflcViewDrawRect){
-    return (*pflcViewDrawRect)(hView, X0, Y0, X1, Y1);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcBlockClear (HANDLE hBlock, HANDLE hLayer)
-{
-  tflcBlockClear pflcBlockClear;
-  pflcBlockClear = (tflcBlockClear)GetProcAddress( ghLibInst, "lcBlockClear" );
-  if (pflcBlockClear){
-    return (*pflcBlockClear)(hBlock, hLayer);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcBlockPurge (HANDLE hBlock)
-{
-  tflcBlockPurge pflcBlockPurge;
-  pflcBlockPurge = (tflcBlockPurge)GetProcAddress( ghLibInst, "lcBlockPurge" );
-  if (pflcBlockPurge){
-    return (*pflcBlockPurge)(hBlock);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcBlockSortEnts (HANDLE hBlock)
-{
-  tflcBlockSortEnts pflcBlockSortEnts;
-  pflcBlockSortEnts = (tflcBlockSortEnts)GetProcAddress( ghLibInst, "lcBlockSortEnts" );
-  if (pflcBlockSortEnts){
-    return (*pflcBlockSortEnts)(hBlock);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddPoint (HANDLE hBlock, double X, double Y)
-{
-  tflcBlockAddPoint pflcBlockAddPoint;
-  pflcBlockAddPoint = (tflcBlockAddPoint)GetProcAddress( ghLibInst, "lcBlockAddPoint" );
-  if (pflcBlockAddPoint){
-    return (*pflcBlockAddPoint)(hBlock, X, Y);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddPoint2 (HANDLE hBlock, double X, double Y, int PtMode, double PtSize)
-{
-  tflcBlockAddPoint2 pflcBlockAddPoint2;
-  pflcBlockAddPoint2 = (tflcBlockAddPoint2)GetProcAddress( ghLibInst, "lcBlockAddPoint2" );
-  if (pflcBlockAddPoint2){
-    return (*pflcBlockAddPoint2)(hBlock, X, Y, PtMode, PtSize);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddXline (HANDLE hBlock, double X, double Y, double Angle, BOOL bRay)
-{
-  tflcBlockAddXline pflcBlockAddXline;
-  pflcBlockAddXline = (tflcBlockAddXline)GetProcAddress( ghLibInst, "lcBlockAddXline" );
-  if (pflcBlockAddXline){
-    return (*pflcBlockAddXline)(hBlock, X, Y, Angle, bRay);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddXline2P (HANDLE hBlock, double X, double Y, double X2, double Y2, BOOL bRay)
-{
-  tflcBlockAddXline2P pflcBlockAddXline2P;
-  pflcBlockAddXline2P = (tflcBlockAddXline2P)GetProcAddress( ghLibInst, "lcBlockAddXline2P" );
-  if (pflcBlockAddXline2P){
-    return (*pflcBlockAddXline2P)(hBlock, X, Y, X2, Y2, bRay);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddLine (HANDLE hBlock, double X1, double Y1, double X2, double Y2)
-{
-  tflcBlockAddLine pflcBlockAddLine;
-  pflcBlockAddLine = (tflcBlockAddLine)GetProcAddress( ghLibInst, "lcBlockAddLine" );
-  if (pflcBlockAddLine){
-    return (*pflcBlockAddLine)(hBlock, X1, Y1, X2, Y2);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddLineDir (HANDLE hBlock, double X, double Y, double Angle, double Dist)
-{
-  tflcBlockAddLineDir pflcBlockAddLineDir;
-  pflcBlockAddLineDir = (tflcBlockAddLineDir)GetProcAddress( ghLibInst, "lcBlockAddLineDir" );
-  if (pflcBlockAddLineDir){
-    return (*pflcBlockAddLineDir)(hBlock, X, Y, Angle, Dist);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddLineTan (HANDLE hBlock, HANDLE hEnt1, HANDLE hEnt2, int Mode)
-{
-  tflcBlockAddLineTan pflcBlockAddLineTan;
-  pflcBlockAddLineTan = (tflcBlockAddLineTan)GetProcAddress( ghLibInst, "lcBlockAddLineTan" );
-  if (pflcBlockAddLineTan){
-    return (*pflcBlockAddLineTan)(hBlock, hEnt1, hEnt2, Mode);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddPolyline (HANDLE hBlock, int FitType, BOOL bClosed, BOOL bFilled)
-{
-  tflcBlockAddPolyline pflcBlockAddPolyline;
-  pflcBlockAddPolyline = (tflcBlockAddPolyline)GetProcAddress( ghLibInst, "lcBlockAddPolyline" );
-  if (pflcBlockAddPolyline){
-    return (*pflcBlockAddPolyline)(hBlock, FitType, bClosed, bFilled);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddRect (HANDLE hBlock, double Xc, double Yc, double Width, double Height, double Angle, BOOL bFilled)
-{
-  tflcBlockAddRect pflcBlockAddRect;
-  pflcBlockAddRect = (tflcBlockAddRect)GetProcAddress( ghLibInst, "lcBlockAddRect" );
-  if (pflcBlockAddRect){
-    return (*pflcBlockAddRect)(hBlock, Xc, Yc, Width, Height, Angle, bFilled);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddRect2 (HANDLE hBlock, double Left, double Bottom, double Width, double Height, double Rad, BOOL bFilled)
-{
-  tflcBlockAddRect2 pflcBlockAddRect2;
-  pflcBlockAddRect2 = (tflcBlockAddRect2)GetProcAddress( ghLibInst, "lcBlockAddRect2" );
-  if (pflcBlockAddRect2){
-    return (*pflcBlockAddRect2)(hBlock, Left, Bottom, Width, Height, Rad, bFilled);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddCircle (HANDLE hBlock, double X, double Y, double Radius, BOOL bFilled)
-{
-  tflcBlockAddCircle pflcBlockAddCircle;
-  pflcBlockAddCircle = (tflcBlockAddCircle)GetProcAddress( ghLibInst, "lcBlockAddCircle" );
-  if (pflcBlockAddCircle){
-    return (*pflcBlockAddCircle)(hBlock, X, Y, Radius, bFilled);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddArc (HANDLE hBlock, double X, double Y, double Radius, double StartAngle, double ArcAngle)
-{
-  tflcBlockAddArc pflcBlockAddArc;
-  pflcBlockAddArc = (tflcBlockAddArc)GetProcAddress( ghLibInst, "lcBlockAddArc" );
-  if (pflcBlockAddArc){
-    return (*pflcBlockAddArc)(hBlock, X, Y, Radius, StartAngle, ArcAngle);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddArc3P (HANDLE hBlock, double X1, double Y1, double X2, double Y2, double X3, double Y3)
-{
-  tflcBlockAddArc3P pflcBlockAddArc3P;
-  pflcBlockAddArc3P = (tflcBlockAddArc3P)GetProcAddress( ghLibInst, "lcBlockAddArc3P" );
-  if (pflcBlockAddArc3P){
-    return (*pflcBlockAddArc3P)(hBlock, X1, Y1, X2, Y2, X3, Y3);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddEllipse (HANDLE hBlock, double X, double Y, double R1, double R2, double RotAngle, double StartAngle, double ArcAngle)
-{
-  tflcBlockAddEllipse pflcBlockAddEllipse;
-  pflcBlockAddEllipse = (tflcBlockAddEllipse)GetProcAddress( ghLibInst, "lcBlockAddEllipse" );
-  if (pflcBlockAddEllipse){
-    return (*pflcBlockAddEllipse)(hBlock, X, Y, R1, R2, RotAngle, StartAngle, ArcAngle);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddText (HANDLE hBlock, LPCWSTR szText, double X, double Y)
-{
-  tflcBlockAddText pflcBlockAddText;
-  pflcBlockAddText = (tflcBlockAddText)GetProcAddress( ghLibInst, "lcBlockAddText" );
-  if (pflcBlockAddText){
-    return (*pflcBlockAddText)(hBlock, szText, X, Y);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddText2 (HANDLE hBlock, LPCWSTR szText, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique)
-{
-  tflcBlockAddText2 pflcBlockAddText2;
-  pflcBlockAddText2 = (tflcBlockAddText2)GetProcAddress( ghLibInst, "lcBlockAddText2" );
-  if (pflcBlockAddText2){
-    return (*pflcBlockAddText2)(hBlock, szText, X, Y, Align, H, WScale, RotAngle, Oblique);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddTextWin (HANDLE hBlock, LPCWSTR szText, double X, double Y)
-{
-  tflcBlockAddTextWin pflcBlockAddTextWin;
-  pflcBlockAddTextWin = (tflcBlockAddTextWin)GetProcAddress( ghLibInst, "lcBlockAddTextWin" );
-  if (pflcBlockAddTextWin){
-    return (*pflcBlockAddTextWin)(hBlock, szText, X, Y);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddTextWin2 (HANDLE hBlock, LPCWSTR szText, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique)
-{
-  tflcBlockAddTextWin2 pflcBlockAddTextWin2;
-  pflcBlockAddTextWin2 = (tflcBlockAddTextWin2)GetProcAddress( ghLibInst, "lcBlockAddTextWin2" );
-  if (pflcBlockAddTextWin2){
-    return (*pflcBlockAddTextWin2)(hBlock, szText, X, Y, Align, H, WScale, RotAngle, Oblique);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddMText (HANDLE hBlock, LPCWSTR szText, double X, double Y, double WrapWidth, int Align, double RotAngle, double H, double WScale)
-{
-  tflcBlockAddMText pflcBlockAddMText;
-  pflcBlockAddMText = (tflcBlockAddMText)GetProcAddress( ghLibInst, "lcBlockAddMText" );
-  if (pflcBlockAddMText){
-    return (*pflcBlockAddMText)(hBlock, szText, X, Y, WrapWidth, Align, RotAngle, H, WScale);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddArcText (HANDLE hBlock, LPCWSTR szText, double X, double Y, double Radius, double StartAngle, BOOL bClockwise, double H, double WScale)
-{
-  tflcBlockAddArcText pflcBlockAddArcText;
-  pflcBlockAddArcText = (tflcBlockAddArcText)GetProcAddress( ghLibInst, "lcBlockAddArcText" );
-  if (pflcBlockAddArcText){
-    return (*pflcBlockAddArcText)(hBlock, szText, X, Y, Radius, StartAngle, bClockwise, H, WScale);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddBlockRef (HANDLE hBlock, HANDLE hRefBlock, double X, double Y, double Scal, double Angle)
-{
-  tflcBlockAddBlockRef pflcBlockAddBlockRef;
-  pflcBlockAddBlockRef = (tflcBlockAddBlockRef)GetProcAddress( ghLibInst, "lcBlockAddBlockRef" );
-  if (pflcBlockAddBlockRef){
-    return (*pflcBlockAddBlockRef)(hBlock, hRefBlock, X, Y, Scal, Angle);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddBlockRefID (HANDLE hBlock, int idRefBlock, double X, double Y, double Scal, double Angle)
-{
-  tflcBlockAddBlockRefID pflcBlockAddBlockRefID;
-  pflcBlockAddBlockRefID = (tflcBlockAddBlockRefID)GetProcAddress( ghLibInst, "lcBlockAddBlockRefID" );
-  if (pflcBlockAddBlockRefID){
-    return (*pflcBlockAddBlockRefID)(hBlock, idRefBlock, X, Y, Scal, Angle);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddBlockRefIDH (HANDLE hBlock, LPCWSTR szIdRefBlock, double X, double Y, double Scal, double Angle)
-{
-  tflcBlockAddBlockRefIDH pflcBlockAddBlockRefIDH;
-  pflcBlockAddBlockRefIDH = (tflcBlockAddBlockRefIDH)GetProcAddress( ghLibInst, "lcBlockAddBlockRefIDH" );
-  if (pflcBlockAddBlockRefIDH){
-    return (*pflcBlockAddBlockRefIDH)(hBlock, szIdRefBlock, X, Y, Scal, Angle);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddImageRef (HANDLE hBlock, HANDLE hImage, double X, double Y, double Width, double Height, BOOL bBorder)
-{
-  tflcBlockAddImageRef pflcBlockAddImageRef;
-  pflcBlockAddImageRef = (tflcBlockAddImageRef)GetProcAddress( ghLibInst, "lcBlockAddImageRef" );
-  if (pflcBlockAddImageRef){
-    return (*pflcBlockAddImageRef)(hBlock, hImage, X, Y, Width, Height, bBorder);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddEcw (HANDLE hBlock, LPCWSTR szFileName)
-{
-  tflcBlockAddEcw pflcBlockAddEcw;
-  pflcBlockAddEcw = (tflcBlockAddEcw)GetProcAddress( ghLibInst, "lcBlockAddEcw" );
-  if (pflcBlockAddEcw){
-    return (*pflcBlockAddEcw)(hBlock, szFileName);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddAttDef (HANDLE hBlock, int Mode, LPCWSTR szTag, LPCWSTR szPrompt, LPCWSTR szDefVal, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique)
-{
-  tflcBlockAddAttDef pflcBlockAddAttDef;
-  pflcBlockAddAttDef = (tflcBlockAddAttDef)GetProcAddress( ghLibInst, "lcBlockAddAttDef" );
-  if (pflcBlockAddAttDef){
-    return (*pflcBlockAddAttDef)(hBlock, Mode, szTag, szPrompt, szDefVal, X, Y, Align, H, WScale, RotAngle, Oblique);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddHatch (HANDLE hBlock, LPCWSTR szFileName, LPCWSTR szPatName, double Scal, double Angle)
-{
-  tflcBlockAddHatch pflcBlockAddHatch;
-  pflcBlockAddHatch = (tflcBlockAddHatch)GetProcAddress( ghLibInst, "lcBlockAddHatch" );
-  if (pflcBlockAddHatch){
-    return (*pflcBlockAddHatch)(hBlock, szFileName, szPatName, Scal, Angle);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddViewport (HANDLE hBlock, double Lef, double Bot, double Width, double Height, double DrwPntX, double DrwPntY, double DrwScale, double DrwAngle)
-{
-  tflcBlockAddViewport pflcBlockAddViewport;
-  pflcBlockAddViewport = (tflcBlockAddViewport)GetProcAddress( ghLibInst, "lcBlockAddViewport" );
-  if (pflcBlockAddViewport){
-    return (*pflcBlockAddViewport)(hBlock, Lef, Bot, Width, Height, DrwPntX, DrwPntY, DrwScale, DrwAngle);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddLeader (HANDLE hBlock, LPCWSTR szText, double Xt, double Yt, double LandDist, double Xa, double Ya, int Attach, int Align)
-{
-  tflcBlockAddLeader pflcBlockAddLeader;
-  pflcBlockAddLeader = (tflcBlockAddLeader)GetProcAddress( ghLibInst, "lcBlockAddLeader" );
-  if (pflcBlockAddLeader){
-    return (*pflcBlockAddLeader)(hBlock, szText, Xt, Yt, LandDist, Xa, Ya, Attach, Align);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimRot (HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, double Yt, double Angle, LPCWSTR szText)
-{
-  tflcBlockAddDimRot pflcBlockAddDimRot;
-  pflcBlockAddDimRot = (tflcBlockAddDimRot)GetProcAddress( ghLibInst, "lcBlockAddDimRot" );
-  if (pflcBlockAddDimRot){
-    return (*pflcBlockAddDimRot)(hBlock, X0, Y0, X1, Y1, Xt, Yt, Angle, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimHor (HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Yt, LPCWSTR szText)
-{
-  tflcBlockAddDimHor pflcBlockAddDimHor;
-  pflcBlockAddDimHor = (tflcBlockAddDimHor)GetProcAddress( ghLibInst, "lcBlockAddDimHor" );
-  if (pflcBlockAddDimHor){
-    return (*pflcBlockAddDimHor)(hBlock, X0, Y0, X1, Y1, Yt, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimVer (HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, LPCWSTR szText)
-{
-  tflcBlockAddDimVer pflcBlockAddDimVer;
-  pflcBlockAddDimVer = (tflcBlockAddDimVer)GetProcAddress( ghLibInst, "lcBlockAddDimVer" );
-  if (pflcBlockAddDimVer){
-    return (*pflcBlockAddDimVer)(hBlock, X0, Y0, X1, Y1, Xt, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimAli (HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, double Yt, LPCWSTR szText)
-{
-  tflcBlockAddDimAli pflcBlockAddDimAli;
-  pflcBlockAddDimAli = (tflcBlockAddDimAli)GetProcAddress( ghLibInst, "lcBlockAddDimAli" );
-  if (pflcBlockAddDimAli){
-    return (*pflcBlockAddDimAli)(hBlock, X0, Y0, X1, Y1, Xt, Yt, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimAli2 (HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Dt, LPCWSTR szText)
-{
-  tflcBlockAddDimAli2 pflcBlockAddDimAli2;
-  pflcBlockAddDimAli2 = (tflcBlockAddDimAli2)GetProcAddress( ghLibInst, "lcBlockAddDimAli2" );
-  if (pflcBlockAddDimAli2){
-    return (*pflcBlockAddDimAli2)(hBlock, X0, Y0, X1, Y1, Dt, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimOrd (HANDLE hBlock, double Xd, double Yd, double Xt, double Yt, bool bX, LPCWSTR szText)
-{
-  tflcBlockAddDimOrd pflcBlockAddDimOrd;
-  pflcBlockAddDimOrd = (tflcBlockAddDimOrd)GetProcAddress( ghLibInst, "lcBlockAddDimOrd" );
-  if (pflcBlockAddDimOrd){
-    return (*pflcBlockAddDimOrd)(hBlock, Xd, Yd, Xt, Yt, bX, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimRad (HANDLE hBlock, double Xc, double Yc, double Xr, double Yr, double Xt, double Yt, LPCWSTR szText)
-{
-  tflcBlockAddDimRad pflcBlockAddDimRad;
-  pflcBlockAddDimRad = (tflcBlockAddDimRad)GetProcAddress( ghLibInst, "lcBlockAddDimRad" );
-  if (pflcBlockAddDimRad){
-    return (*pflcBlockAddDimRad)(hBlock, Xc, Yc, Xr, Yr, Xt, Yt, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimRad2 (HANDLE hBlock, double Xc, double Yc, double R, double Angle, double TextOff, LPCWSTR szText)
-{
-  tflcBlockAddDimRad2 pflcBlockAddDimRad2;
-  pflcBlockAddDimRad2 = (tflcBlockAddDimRad2)GetProcAddress( ghLibInst, "lcBlockAddDimRad2" );
-  if (pflcBlockAddDimRad2){
-    return (*pflcBlockAddDimRad2)(hBlock, Xc, Yc, R, Angle, TextOff, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimDia (HANDLE hBlock, double Xc, double Yc, double Xr, double Yr, double Xt, double Yt, LPCWSTR szText)
-{
-  tflcBlockAddDimDia pflcBlockAddDimDia;
-  pflcBlockAddDimDia = (tflcBlockAddDimDia)GetProcAddress( ghLibInst, "lcBlockAddDimDia" );
-  if (pflcBlockAddDimDia){
-    return (*pflcBlockAddDimDia)(hBlock, Xc, Yc, Xr, Yr, Xt, Yt, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimDia2 (HANDLE hBlock, double Xc, double Yc, double R, double Angle, double TextOff, LPCWSTR szText)
-{
-  tflcBlockAddDimDia2 pflcBlockAddDimDia2;
-  pflcBlockAddDimDia2 = (tflcBlockAddDimDia2)GetProcAddress( ghLibInst, "lcBlockAddDimDia2" );
-  if (pflcBlockAddDimDia2){
-    return (*pflcBlockAddDimDia2)(hBlock, Xc, Yc, R, Angle, TextOff, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimAng (HANDLE hBlock, double Xc, double Yc, double X1, double Y1, double X2, double Y2, double Xa, double Ya, double TextPos, LPCWSTR szText)
-{
-  tflcBlockAddDimAng pflcBlockAddDimAng;
-  pflcBlockAddDimAng = (tflcBlockAddDimAng)GetProcAddress( ghLibInst, "lcBlockAddDimAng" );
-  if (pflcBlockAddDimAng){
-    return (*pflcBlockAddDimAng)(hBlock, Xc, Yc, X1, Y1, X2, Y2, Xa, Ya, TextPos, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockAddDimAng2 (HANDLE hBlock, double X1, double Y1, double X2, double Y2, double X3, double Y3, double X4, double Y4, double Xa, double Ya, double TextPos, LPCWSTR szText)
-{
-  tflcBlockAddDimAng2 pflcBlockAddDimAng2;
-  pflcBlockAddDimAng2 = (tflcBlockAddDimAng2)GetProcAddress( ghLibInst, "lcBlockAddDimAng2" );
-  if (pflcBlockAddDimAng2){
-    return (*pflcBlockAddDimAng2)(hBlock, X1, Y1, X2, Y2, X3, Y3, X4, Y4, Xa, Ya, TextPos, szText);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockGetFirstEnt (HANDLE hBlock)
-{
-  tflcBlockGetFirstEnt pflcBlockGetFirstEnt;
-  pflcBlockGetFirstEnt = (tflcBlockGetFirstEnt)GetProcAddress( ghLibInst, "lcBlockGetFirstEnt" );
-  if (pflcBlockGetFirstEnt){
-    return (*pflcBlockGetFirstEnt)(hBlock);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockGetNextEnt (HANDLE hBlock, HANDLE hEnt)
-{
-  tflcBlockGetNextEnt pflcBlockGetNextEnt;
-  pflcBlockGetNextEnt = (tflcBlockGetNextEnt)GetProcAddress( ghLibInst, "lcBlockGetNextEnt" );
-  if (pflcBlockGetNextEnt){
-    return (*pflcBlockGetNextEnt)(hBlock, hEnt);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockGetLastEnt (HANDLE hBlock)
-{
-  tflcBlockGetLastEnt pflcBlockGetLastEnt;
-  pflcBlockGetLastEnt = (tflcBlockGetLastEnt)GetProcAddress( ghLibInst, "lcBlockGetLastEnt" );
-  if (pflcBlockGetLastEnt){
-    return (*pflcBlockGetLastEnt)(hBlock);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockGetPrevEnt (HANDLE hBlock, HANDLE hEnt)
-{
-  tflcBlockGetPrevEnt pflcBlockGetPrevEnt;
-  pflcBlockGetPrevEnt = (tflcBlockGetPrevEnt)GetProcAddress( ghLibInst, "lcBlockGetPrevEnt" );
-  if (pflcBlockGetPrevEnt){
-    return (*pflcBlockGetPrevEnt)(hBlock, hEnt);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockGetEntByID (HANDLE hBlock, int Id)
-{
-  tflcBlockGetEntByID pflcBlockGetEntByID;
-  pflcBlockGetEntByID = (tflcBlockGetEntByID)GetProcAddress( ghLibInst, "lcBlockGetEntByID" );
-  if (pflcBlockGetEntByID){
-    return (*pflcBlockGetEntByID)(hBlock, Id);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockGetEntByIDH (HANDLE hBlock, LPCWSTR szId)
-{
-  tflcBlockGetEntByIDH pflcBlockGetEntByIDH;
-  pflcBlockGetEntByIDH = (tflcBlockGetEntByIDH)GetProcAddress( ghLibInst, "lcBlockGetEntByIDH" );
-  if (pflcBlockGetEntByIDH){
-    return (*pflcBlockGetEntByIDH)(hBlock, szId);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockGetEntByKey (HANDLE hBlock, int Key)
-{
-  tflcBlockGetEntByKey pflcBlockGetEntByKey;
-  pflcBlockGetEntByKey = (tflcBlockGetEntByKey)GetProcAddress( ghLibInst, "lcBlockGetEntByKey" );
-  if (pflcBlockGetEntByKey){
-    return (*pflcBlockGetEntByKey)(hBlock, Key);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcBlockUnselect (HANDLE hBlock)
-{
-  tflcBlockUnselect pflcBlockUnselect;
-  pflcBlockUnselect = (tflcBlockUnselect)GetProcAddress( ghLibInst, "lcBlockUnselect" );
-  if (pflcBlockUnselect){
-    return (*pflcBlockUnselect)(hBlock);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcBlockSelectEnt (HANDLE hBlock, HANDLE hEntity, BOOL bSelect)
-{
-  tflcBlockSelectEnt pflcBlockSelectEnt;
-  pflcBlockSelectEnt = (tflcBlockSelectEnt)GetProcAddress( ghLibInst, "lcBlockSelectEnt" );
-  if (pflcBlockSelectEnt){
-    return (*pflcBlockSelectEnt)(hBlock, hEntity, bSelect);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcBlockSelErase (HANDLE hBlock)
-{
-  tflcBlockSelErase pflcBlockSelErase;
-  pflcBlockSelErase = (tflcBlockSelErase)GetProcAddress( ghLibInst, "lcBlockSelErase" );
-  if (pflcBlockSelErase){
-    return (*pflcBlockSelErase)(hBlock);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcBlockSelMove (HANDLE hBlock, double dX, double dY, BOOL bCopy, BOOL bNewSelect)
-{
-  tflcBlockSelMove pflcBlockSelMove;
-  pflcBlockSelMove = (tflcBlockSelMove)GetProcAddress( ghLibInst, "lcBlockSelMove" );
-  if (pflcBlockSelMove){
-    return (*pflcBlockSelMove)(hBlock, dX, dY, bCopy, bNewSelect);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcBlockSelScale (HANDLE hBlock, double X0, double Y0, double Scal, BOOL bCopy, BOOL bNewSelect)
-{
-  tflcBlockSelScale pflcBlockSelScale;
-  pflcBlockSelScale = (tflcBlockSelScale)GetProcAddress( ghLibInst, "lcBlockSelScale" );
-  if (pflcBlockSelScale){
-    return (*pflcBlockSelScale)(hBlock, X0, Y0, Scal, bCopy, bNewSelect);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcBlockSelRotate (HANDLE hBlock, double X0, double Y0, double Angle, BOOL bCopy, BOOL bNewSelect)
-{
-  tflcBlockSelRotate pflcBlockSelRotate;
-  pflcBlockSelRotate = (tflcBlockSelRotate)GetProcAddress( ghLibInst, "lcBlockSelRotate" );
-  if (pflcBlockSelRotate){
-    return (*pflcBlockSelRotate)(hBlock, X0, Y0, Angle, bCopy, bNewSelect);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcBlockSelMirror (HANDLE hBlock, double X1, double Y1, double X2, double Y2, BOOL bCopy, BOOL bNewSelect)
-{
-  tflcBlockSelMirror pflcBlockSelMirror;
-  pflcBlockSelMirror = (tflcBlockSelMirror)GetProcAddress( ghLibInst, "lcBlockSelMirror" );
-  if (pflcBlockSelMirror){
-    return (*pflcBlockSelMirror)(hBlock, X1, Y1, X2, Y2, bCopy, bNewSelect);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcBlockSelExplode (HANDLE hBlock)
-{
-  tflcBlockSelExplode pflcBlockSelExplode;
-  pflcBlockSelExplode = (tflcBlockSelExplode)GetProcAddress( ghLibInst, "lcBlockSelExplode" );
-  if (pflcBlockSelExplode){
-    return (*pflcBlockSelExplode)(hBlock);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockSelJoin (HANDLE hBlock, double Delta)
-{
-  tflcBlockSelJoin pflcBlockSelJoin;
-  pflcBlockSelJoin = (tflcBlockSelJoin)GetProcAddress( ghLibInst, "lcBlockSelJoin" );
-  if (pflcBlockSelJoin){
-    return (*pflcBlockSelJoin)(hBlock, Delta);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockGetFirstSel (HANDLE hBlock)
-{
-  tflcBlockGetFirstSel pflcBlockGetFirstSel;
-  pflcBlockGetFirstSel = (tflcBlockGetFirstSel)GetProcAddress( ghLibInst, "lcBlockGetFirstSel" );
-  if (pflcBlockGetFirstSel){
-    return (*pflcBlockGetFirstSel)(hBlock);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlockGetNextSel (HANDLE hBlock)
-{
-  tflcBlockGetNextSel pflcBlockGetNextSel;
-  pflcBlockGetNextSel = (tflcBlockGetNextSel)GetProcAddress( ghLibInst, "lcBlockGetNextSel" );
-  if (pflcBlockGetNextSel){
-    return (*pflcBlockGetNextSel)(hBlock);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntErase (HANDLE hEnt, BOOL bErase)
-{
-  tflcEntErase pflcEntErase;
-  pflcEntErase = (tflcEntErase)GetProcAddress( ghLibInst, "lcEntErase" );
-  if (pflcEntErase){
-    return (*pflcEntErase)(hEnt, bErase);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntMove (HANDLE hEnt, double dX, double dY)
-{
-  tflcEntMove pflcEntMove;
-  pflcEntMove = (tflcEntMove)GetProcAddress( ghLibInst, "lcEntMove" );
-  if (pflcEntMove){
-    return (*pflcEntMove)(hEnt, dX, dY);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntScale (HANDLE hEnt, double X0, double Y0, double Scal)
-{
-  tflcEntScale pflcEntScale;
-  pflcEntScale = (tflcEntScale)GetProcAddress( ghLibInst, "lcEntScale" );
-  if (pflcEntScale){
-    return (*pflcEntScale)(hEnt, X0, Y0, Scal);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntRotate (HANDLE hEnt, double X0, double Y0, double Angle)
-{
-  tflcEntRotate pflcEntRotate;
-  pflcEntRotate = (tflcEntRotate)GetProcAddress( ghLibInst, "lcEntRotate" );
-  if (pflcEntRotate){
-    return (*pflcEntRotate)(hEnt, X0, Y0, Angle);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntMirror (HANDLE hEnt, double X1, double Y1, double X2, double Y2)
-{
-  tflcEntMirror pflcEntMirror;
-  pflcEntMirror = (tflcEntMirror)GetProcAddress( ghLibInst, "lcEntMirror" );
-  if (pflcEntMirror){
-    return (*pflcEntMirror)(hEnt, X1, Y1, X2, Y2);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntExplode (HANDLE hEnt, BOOL bSelect)
-{
-  tflcEntExplode pflcEntExplode;
-  pflcEntExplode = (tflcEntExplode)GetProcAddress( ghLibInst, "lcEntExplode" );
-  if (pflcEntExplode){
-    return (*pflcEntExplode)(hEnt, bSelect);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntOffset (HANDLE hEnt, double Dist)
-{
-  tflcEntOffset pflcEntOffset;
-  pflcEntOffset = (tflcEntOffset)GetProcAddress( ghLibInst, "lcEntOffset" );
-  if (pflcEntOffset){
-    return (*pflcEntOffset)(hEnt, Dist);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntToTop (HANDLE hEnt)
-{
-  tflcEntToTop pflcEntToTop;
-  pflcEntToTop = (tflcEntToTop)GetProcAddress( ghLibInst, "lcEntToTop" );
-  if (pflcEntToTop){
-    return (*pflcEntToTop)(hEnt);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntToBottom (HANDLE hEnt)
-{
-  tflcEntToBottom pflcEntToBottom;
-  pflcEntToBottom = (tflcEntToBottom)GetProcAddress( ghLibInst, "lcEntToBottom" );
-  if (pflcEntToBottom){
-    return (*pflcEntToBottom)(hEnt);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntToAbove (HANDLE hEnt, HANDLE hEnt2)
-{
-  tflcEntToAbove pflcEntToAbove;
-  pflcEntToAbove = (tflcEntToAbove)GetProcAddress( ghLibInst, "lcEntToAbove" );
-  if (pflcEntToAbove){
-    return (*pflcEntToAbove)(hEnt, hEnt2);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntToUnder (HANDLE hEnt, HANDLE hEnt2)
-{
-  tflcEntToUnder pflcEntToUnder;
-  pflcEntToUnder = (tflcEntToUnder)GetProcAddress( ghLibInst, "lcEntToUnder" );
-  if (pflcEntToUnder){
-    return (*pflcEntToUnder)(hEnt, hEnt2);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntGetGrip (HANDLE hEnt, int iGrip, double* pX, double* pY)
-{
-  tflcEntGetGrip pflcEntGetGrip;
-  pflcEntGetGrip = (tflcEntGetGrip)GetProcAddress( ghLibInst, "lcEntGetGrip" );
-  if (pflcEntGetGrip){
-    return (*pflcEntGetGrip)(hEnt, iGrip, pX, pY);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntPutGrip (HANDLE hEnt, int iGrip, double X, double Y)
-{
-  tflcEntPutGrip pflcEntPutGrip;
-  pflcEntPutGrip = (tflcEntPutGrip)GetProcAddress( ghLibInst, "lcEntPutGrip" );
-  if (pflcEntPutGrip){
-    return (*pflcEntPutGrip)(hEnt, iGrip, X, Y);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcEntUpdate (HANDLE hEnt)
-{
-  tflcEntUpdate pflcEntUpdate;
-  pflcEntUpdate = (tflcEntUpdate)GetProcAddress( ghLibInst, "lcEntUpdate" );
-  if (pflcEntUpdate){
-    return (*pflcEntUpdate)(hEnt);
-  }
-  return 0;
-}
-
-
-//--------------
-int LCAPI lcIntersection (HANDLE hEnt, HANDLE hEnt2)
-{
-  tflcIntersection pflcIntersection;
-  pflcIntersection = (tflcIntersection)GetProcAddress( ghLibInst, "lcIntersection" );
-  if (pflcIntersection){
-    return (*pflcIntersection)(hEnt, hEnt2);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcInterGetPoint (int iPoint, double* pX, double* pY)
-{
-  tflcInterGetPoint pflcInterGetPoint;
-  pflcInterGetPoint = (tflcInterGetPoint)GetProcAddress( ghLibInst, "lcInterGetPoint" );
-  if (pflcInterGetPoint){
-    return (*pflcInterGetPoint)(iPoint, pX, pY);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcPlineAddVer (HANDLE hPline, HANDLE hVer0, double X, double Y)
-{
-  tflcPlineAddVer pflcPlineAddVer;
-  pflcPlineAddVer = (tflcPlineAddVer)GetProcAddress( ghLibInst, "lcPlineAddVer" );
-  if (pflcPlineAddVer){
-    return (*pflcPlineAddVer)(hPline, hVer0, X, Y);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcPlineAddVer2 (HANDLE hPline, HANDLE hVer0, double X, double Y, double Param, double W0, double W1)
-{
-  tflcPlineAddVer2 pflcPlineAddVer2;
-  pflcPlineAddVer2 = (tflcPlineAddVer2)GetProcAddress( ghLibInst, "lcPlineAddVer2" );
-  if (pflcPlineAddVer2){
-    return (*pflcPlineAddVer2)(hPline, hVer0, X, Y, Param, W0, W1);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcPlineAddVerDir (HANDLE hPline, HANDLE hVer0, double Ang, double Len)
-{
-  tflcPlineAddVerDir pflcPlineAddVerDir;
-  pflcPlineAddVerDir = (tflcPlineAddVerDir)GetProcAddress( ghLibInst, "lcPlineAddVerDir" );
-  if (pflcPlineAddVerDir){
-    return (*pflcPlineAddVerDir)(hPline, hVer0, Ang, Len);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcPlineDeleteVer (HANDLE hPline, HANDLE hVer)
-{
-  tflcPlineDeleteVer pflcPlineDeleteVer;
-  pflcPlineDeleteVer = (tflcPlineDeleteVer)GetProcAddress( ghLibInst, "lcPlineDeleteVer" );
-  if (pflcPlineDeleteVer){
-    return (*pflcPlineDeleteVer)(hPline, hVer);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcPlineGetFirstVer (HANDLE hPline)
-{
-  tflcPlineGetFirstVer pflcPlineGetFirstVer;
-  pflcPlineGetFirstVer = (tflcPlineGetFirstVer)GetProcAddress( ghLibInst, "lcPlineGetFirstVer" );
-  if (pflcPlineGetFirstVer){
-    return (*pflcPlineGetFirstVer)(hPline);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcPlineGetNextVer (HANDLE hPline, HANDLE hVer)
-{
-  tflcPlineGetNextVer pflcPlineGetNextVer;
-  pflcPlineGetNextVer = (tflcPlineGetNextVer)GetProcAddress( ghLibInst, "lcPlineGetNextVer" );
-  if (pflcPlineGetNextVer){
-    return (*pflcPlineGetNextVer)(hPline, hVer);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcPlineGetLastVer (HANDLE hPline)
-{
-  tflcPlineGetLastVer pflcPlineGetLastVer;
-  pflcPlineGetLastVer = (tflcPlineGetLastVer)GetProcAddress( ghLibInst, "lcPlineGetLastVer" );
-  if (pflcPlineGetLastVer){
-    return (*pflcPlineGetLastVer)(hPline);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcPlineGetPrevVer (HANDLE hPline, HANDLE hVer)
-{
-  tflcPlineGetPrevVer pflcPlineGetPrevVer;
-  pflcPlineGetPrevVer = (tflcPlineGetPrevVer)GetProcAddress( ghLibInst, "lcPlineGetPrevVer" );
-  if (pflcPlineGetPrevVer){
-    return (*pflcPlineGetPrevVer)(hPline, hVer);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcPlineGetVer (HANDLE hPline, int Index)
-{
-  tflcPlineGetVer pflcPlineGetVer;
-  pflcPlineGetVer = (tflcPlineGetVer)GetProcAddress( ghLibInst, "lcPlineGetVer" );
-  if (pflcPlineGetVer){
-    return (*pflcPlineGetVer)(hPline, Index);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcPlineGetVerPt (HANDLE hPline, double X, double Y, double Delta)
-{
-  tflcPlineGetVerPt pflcPlineGetVerPt;
-  pflcPlineGetVerPt = (tflcPlineGetVerPt)GetProcAddress( ghLibInst, "lcPlineGetVerPt" );
-  if (pflcPlineGetVerPt){
-    return (*pflcPlineGetVerPt)(hPline, X, Y, Delta);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcPlineGetSeg (HANDLE hPline, double X, double Y, double Delta)
-{
-  tflcPlineGetSeg pflcPlineGetSeg;
-  pflcPlineGetSeg = (tflcPlineGetSeg)GetProcAddress( ghLibInst, "lcPlineGetSeg" );
-  if (pflcPlineGetSeg){
-    return (*pflcPlineGetSeg)(hPline, X, Y, Delta);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcPlineReverse (HANDLE hPline)
-{
-  tflcPlineReverse pflcPlineReverse;
-  pflcPlineReverse = (tflcPlineReverse)GetProcAddress( ghLibInst, "lcPlineReverse" );
-  if (pflcPlineReverse){
-    return (*pflcPlineReverse)(hPline);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcVportSetView (HANDLE hVport, double Xcen, double Ycen, double Scale, double Angle)
-{
-  tflcVportSetView pflcVportSetView;
-  pflcVportSetView = (tflcVportSetView)GetProcAddress( ghLibInst, "lcVportSetView" );
-  if (pflcVportSetView){
-    return (*pflcVportSetView)(hVport, Xcen, Ycen, Scale, Angle);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcVportFrolClear (HANDLE hVport)
-{
-  tflcVportFrolClear pflcVportFrolClear;
-  pflcVportFrolClear = (tflcVportFrolClear)GetProcAddress( ghLibInst, "lcVportFrolClear" );
-  if (pflcVportFrolClear){
-    return (*pflcVportFrolClear)(hVport);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcVportFrolAdd (HANDLE hVport, HANDLE hLayer)
-{
-  tflcVportFrolAdd pflcVportFrolAdd;
-  pflcVportFrolAdd = (tflcVportFrolAdd)GetProcAddress( ghLibInst, "lcVportFrolAdd" );
-  if (pflcVportFrolAdd){
-    return (*pflcVportFrolAdd)(hVport, hLayer);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcVportFrolGet (HANDLE hVport, int iLayer)
-{
-  tflcVportFrolGet pflcVportFrolGet;
-  pflcVportFrolGet = (tflcVportFrolGet)GetProcAddress( ghLibInst, "lcVportFrolGet" );
-  if (pflcVportFrolGet){
-    return (*pflcVportFrolGet)(hVport, iLayer);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcVportIsFrol (HANDLE hVport, HANDLE hLayer)
-{
-  tflcVportIsFrol pflcVportIsFrol;
-  pflcVportIsFrol = (tflcVportIsFrol)GetProcAddress( ghLibInst, "lcVportIsFrol" );
-  if (pflcVportIsFrol){
-    return (*pflcVportIsFrol)(hVport, hLayer);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlkRefAddAtt (HANDLE hBlockRef, LPCWSTR szTag, LPCWSTR szValue)
-{
-  tflcBlkRefAddAtt pflcBlkRefAddAtt;
-  pflcBlkRefAddAtt = (tflcBlkRefAddAtt)GetProcAddress( ghLibInst, "lcBlkRefAddAtt" );
-  if (pflcBlkRefAddAtt){
-    return (*pflcBlkRefAddAtt)(hBlockRef, szTag, szValue);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlkRefGetFirstAtt (HANDLE hBlockRef)
-{
-  tflcBlkRefGetFirstAtt pflcBlkRefGetFirstAtt;
-  pflcBlkRefGetFirstAtt = (tflcBlkRefGetFirstAtt)GetProcAddress( ghLibInst, "lcBlkRefGetFirstAtt" );
-  if (pflcBlkRefGetFirstAtt){
-    return (*pflcBlkRefGetFirstAtt)(hBlockRef);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlkRefGetNextAtt (HANDLE hBlockRef, HANDLE hAttrib)
-{
-  tflcBlkRefGetNextAtt pflcBlkRefGetNextAtt;
-  pflcBlkRefGetNextAtt = (tflcBlkRefGetNextAtt)GetProcAddress( ghLibInst, "lcBlkRefGetNextAtt" );
-  if (pflcBlkRefGetNextAtt){
-    return (*pflcBlkRefGetNextAtt)(hBlockRef, hAttrib);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcBlkRefGetAtt (HANDLE hBlockRef, LPCWSTR szTag)
-{
-  tflcBlkRefGetAtt pflcBlkRefGetAtt;
-  pflcBlkRefGetAtt = (tflcBlkRefGetAtt)GetProcAddress( ghLibInst, "lcBlkRefGetAtt" );
-  if (pflcBlkRefGetAtt){
-    return (*pflcBlkRefGetAtt)(hBlockRef, szTag);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcHatchBoundStart (HANDLE hHatch)
-{
-  tflcHatchBoundStart pflcHatchBoundStart;
-  pflcHatchBoundStart = (tflcHatchBoundStart)GetProcAddress( ghLibInst, "lcHatchBoundStart" );
-  if (pflcHatchBoundStart){
-    return (*pflcHatchBoundStart)(hHatch);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcHatchBoundPoint (HANDLE hHatch, double X, double Y)
-{
-  tflcHatchBoundPoint pflcHatchBoundPoint;
-  pflcHatchBoundPoint = (tflcHatchBoundPoint)GetProcAddress( ghLibInst, "lcHatchBoundPoint" );
-  if (pflcHatchBoundPoint){
-    return (*pflcHatchBoundPoint)(hHatch, X, Y);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcHatchBoundEndLoop (HANDLE hHatch)
-{
-  tflcHatchBoundEndLoop pflcHatchBoundEndLoop;
-  pflcHatchBoundEndLoop = (tflcHatchBoundEndLoop)GetProcAddress( ghLibInst, "lcHatchBoundEndLoop" );
-  if (pflcHatchBoundEndLoop){
-    return (*pflcHatchBoundEndLoop)(hHatch);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcHatchBoundEnd (HANDLE hHatch)
-{
-  tflcHatchBoundEnd pflcHatchBoundEnd;
-  pflcHatchBoundEnd = (tflcHatchBoundEnd)GetProcAddress( ghLibInst, "lcHatchBoundEnd" );
-  if (pflcHatchBoundEnd){
-    return (*pflcHatchBoundEnd)(hHatch);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcHatchPatStart (HANDLE hHatch)
-{
-  tflcHatchPatStart pflcHatchPatStart;
-  pflcHatchPatStart = (tflcHatchPatStart)GetProcAddress( ghLibInst, "lcHatchPatStart" );
-  if (pflcHatchPatStart){
-    return (*pflcHatchPatStart)(hHatch);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcHatchPatLine (HANDLE hHatch, double Angle, double x0, double y0, double dx, double dy, int nDash, double L0, double L1, double L2, double L3, double L4, double L5, double L6, double L7)
-{
-  tflcHatchPatLine pflcHatchPatLine;
-  pflcHatchPatLine = (tflcHatchPatLine)GetProcAddress( ghLibInst, "lcHatchPatLine" );
-  if (pflcHatchPatLine){
-    return (*pflcHatchPatLine)(hHatch, Angle, x0, y0, dx, dy, nDash, L0, L1, L2, L3, L4, L5, L6, L7);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcHatchPatEnd (HANDLE hHatch)
-{
-  tflcHatchPatEnd pflcHatchPatEnd;
-  pflcHatchPatEnd = (tflcHatchPatEnd)GetProcAddress( ghLibInst, "lcHatchPatEnd" );
-  if (pflcHatchPatEnd){
-    return (*pflcHatchPatEnd)(hHatch);
-  }
-  return 0;
-}
-
-
-//--------------
-int LCAPI lcHatchGetLoopSize (HANDLE hHatch, int iLoop)
-{
-  tflcHatchGetLoopSize pflcHatchGetLoopSize;
-  pflcHatchGetLoopSize = (tflcHatchGetLoopSize)GetProcAddress( ghLibInst, "lcHatchGetLoopSize" );
-  if (pflcHatchGetLoopSize){
-    return (*pflcHatchGetLoopSize)(hHatch, iLoop);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcHatchGetPoint (HANDLE hHatch, int iPnt, double* pX, double* pY)
-{
-  tflcHatchGetPoint pflcHatchGetPoint;
-  pflcHatchGetPoint = (tflcHatchGetPoint)GetProcAddress( ghLibInst, "lcHatchGetPoint" );
-  if (pflcHatchGetPoint){
-    return (*pflcHatchGetPoint)(hHatch, iPnt, pX, pY);
-  }
-  return 0;
-}
-
-
-//--------------
-int LCAPI lcRectGetPolyline (HANDLE hRect, double* pX, double* pY, double* pBulge)
-{
-  tflcRectGetPolyline pflcRectGetPolyline;
-  pflcRectGetPolyline = (tflcRectGetPolyline)GetProcAddress( ghLibInst, "lcRectGetPolyline" );
-  if (pflcRectGetPolyline){
-    return (*pflcRectGetPolyline)(hRect, pX, pY, pBulge);
-  }
-  return 0;
-}
-
-
-//--------------
-BOOL LCAPI lcXlinePutDir (HANDLE hXline, double X, double Y)
-{
-  tflcXlinePutDir pflcXlinePutDir;
-  pflcXlinePutDir = (tflcXlinePutDir)GetProcAddress( ghLibInst, "lcXlinePutDir" );
-  if (pflcXlinePutDir){
-    return (*pflcXlinePutDir)(hXline, X, Y);
-  }
-  return 0;
-}
-
-
-//--------------
-HANDLE LCAPI lcCreateWindow (HWND hWndParent, int Style, int Left, int Top, int Width, int Height)
-{
-  tflcCreateWindow pflcCreateWindow;
-  pflcCreateWindow = (tflcCreateWindow)GetProcAddress( ghLibInst, "lcCreateWindow" );
   if (pflcCreateWindow){
-    return (*pflcCreateWindow)(hWndParent, Style, Left, Top, Width, Height);
+    return (*pflcCreateWindow)(hWndParent, Style);
   }
   return 0;
 }
@@ -2488,8 +5064,6 @@ HANDLE LCAPI lcCreateWindow (HWND hWndParent, int Style, int Left, int Top, int 
 //--------------
 BOOL LCAPI lcDeleteWindow (HANDLE hLcWnd)
 {
-  tflcDeleteWindow pflcDeleteWindow;
-  pflcDeleteWindow = (tflcDeleteWindow)GetProcAddress( ghLibInst, "lcDeleteWindow" );
   if (pflcDeleteWindow){
     return (*pflcDeleteWindow)(hLcWnd);
   }
@@ -2498,10 +5072,38 @@ BOOL LCAPI lcDeleteWindow (HANDLE hLcWnd)
 
 
 //--------------
+BOOL LCAPI lcWndOnClose (HANDLE hLcWnd)
+{
+  if (pflcWndOnClose){
+    return (*pflcWndOnClose)(hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndExeCommand (HANDLE hLcWnd, int Command, int CmdParam)
+{
+  if (pflcWndExeCommand){
+    return (*pflcWndExeCommand)(hLcWnd, Command, CmdParam);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndExitCommand (HANDLE hLcWnd)
+{
+  if (pflcWndExitCommand){
+    return (*pflcWndExitCommand)(hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
 BOOL LCAPI lcWndResize (HANDLE hLcWnd, int Left, int Top, int Width, int Height)
 {
-  tflcWndResize pflcWndResize;
-  pflcWndResize = (tflcWndResize)GetProcAddress( ghLibInst, "lcWndResize" );
   if (pflcWndResize){
     return (*pflcWndResize)(hLcWnd, Left, Top, Width, Height);
   }
@@ -2510,12 +5112,190 @@ BOOL LCAPI lcWndResize (HANDLE hLcWnd, int Left, int Top, int Width, int Height)
 
 
 //--------------
-BOOL LCAPI lcWndSelectView (HANDLE hLcWnd, HANDLE hView)
+BOOL LCAPI lcWndRedraw (HANDLE hLcWnd)
 {
-  tflcWndSelectView pflcWndSelectView;
-  pflcWndSelectView = (tflcWndSelectView)GetProcAddress( ghLibInst, "lcWndSelectView" );
-  if (pflcWndSelectView){
-    return (*pflcWndSelectView)(hLcWnd, hView);
+  if (pflcWndRedraw){
+    return (*pflcWndRedraw)(hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndRedrawAuto (HANDLE hLcWnd, int Elapse, F_REDRAW pFunc)
+{
+  if (pflcWndRedrawAuto){
+    return (*pflcWndRedrawAuto)(hLcWnd, Elapse, pFunc);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndSetFocus (HANDLE hLcWnd)
+{
+  if (pflcWndSetFocus){
+    return (*pflcWndSetFocus)(hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndSetExtents (HANDLE hLcWnd, double Xmin, double Ymin, double Xmax, double Ymax)
+{
+  if (pflcWndSetExtents){
+    return (*pflcWndSetExtents)(hLcWnd, Xmin, Ymin, Xmax, Ymax);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndSetBlock (HANDLE hLcWnd, HANDLE hBlock)
+{
+  if (pflcWndSetBlock){
+    return (*pflcWndSetBlock)(hLcWnd, hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndSetProps (HANDLE hLcWnd, HANDLE hPropWnd)
+{
+  if (pflcWndSetProps){
+    return (*pflcWndSetProps)(hLcWnd, hPropWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndSetCmdwin (HANDLE hLcWnd, HANDLE hCmdLine)
+{
+  if (pflcWndSetCmdwin){
+    return (*pflcWndSetCmdwin)(hLcWnd, hCmdLine);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndSetBasePoint (HANDLE hLcWnd, BOOL bState, double X, double Y)
+{
+  if (pflcWndSetBasePoint){
+    return (*pflcWndSetBasePoint)(hLcWnd, bState, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndEmulator (HANDLE hLcWnd, int Mode)
+{
+  if (pflcWndEmulator){
+    return (*pflcWndEmulator)(hLcWnd, Mode);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndMagnifier (HANDLE hLcWnd, BOOL bOn, int Width, int Height, int Zoom, int Flags)
+{
+  if (pflcWndMagnifier){
+    return (*pflcWndMagnifier)(hLcWnd, bOn, Width, Height, Zoom, Flags);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndHoverText (HANDLE hLcWnd, LPCWSTR szText, int X, int Y, int Align)
+{
+  if (pflcWndHoverText){
+    return (*pflcWndHoverText)(hLcWnd, szText, X, Y, Align);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcWndMessage (HANDLE hLcWnd, LPCWSTR szText, int uType)
+{
+  if (pflcWndMessage){
+    return (*pflcWndMessage)(hLcWnd, szText, uType);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndWaitPoint (HANDLE hLcWnd, LPCWSTR szText, double* pXdrw, double* pYdrw)
+{
+  if (pflcWndWaitPoint){
+    return (*pflcWndWaitPoint)(hLcWnd, szText, pXdrw, pYdrw);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndWaitPoint2 (HANDLE hLcWnd, LPCWSTR szText, double* pXdrw, double* pYdrw, F_WAITPOINT pFunc, int FuncPrm)
+{
+  if (pflcWndWaitPoint2){
+    return (*pflcWndWaitPoint2)(hLcWnd, szText, pXdrw, pYdrw, pFunc, FuncPrm);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndInputStr (HANDLE hLcWnd)
+{
+  if (pflcWndInputStr){
+    return (*pflcWndInputStr)(hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndUpdate (HANDLE hLcWnd, int Mode)
+{
+  if (pflcWndUpdate){
+    return (*pflcWndUpdate)(hLcWnd, Mode);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcWndDrwAdd (HANDLE hLcWnd, LPCWSTR szFileName)
+{
+  if (pflcWndDrwAdd){
+    return (*pflcWndDrwAdd)(hLcWnd, szFileName);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndDrwDelete (HANDLE hLcWnd, HANDLE hLcDrw)
+{
+  if (pflcWndDrwDelete){
+    return (*pflcWndDrwDelete)(hLcWnd, hLcDrw);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcWndDrwGet (HANDLE hLcWnd, int Index)
+{
+  if (pflcWndDrwGet){
+    return (*pflcWndDrwGet)(hLcWnd, Index);
   }
   return 0;
 }
@@ -2524,8 +5304,6 @@ BOOL LCAPI lcWndSelectView (HANDLE hLcWnd, HANDLE hView)
 //--------------
 BOOL LCAPI lcWndZoomRect (HANDLE hLcWnd, double Left, double Bottom, double Right, double Top)
 {
-  tflcWndZoomRect pflcWndZoomRect;
-  pflcWndZoomRect = (tflcWndZoomRect)GetProcAddress( ghLibInst, "lcWndZoomRect" );
   if (pflcWndZoomRect){
     return (*pflcWndZoomRect)(hLcWnd, Left, Bottom, Right, Top);
   }
@@ -2536,8 +5314,6 @@ BOOL LCAPI lcWndZoomRect (HANDLE hLcWnd, double Left, double Bottom, double Righ
 //--------------
 BOOL LCAPI lcWndZoomScale (HANDLE hLcWnd, double Scal)
 {
-  tflcWndZoomScale pflcWndZoomScale;
-  pflcWndZoomScale = (tflcWndZoomScale)GetProcAddress( ghLibInst, "lcWndZoomScale" );
   if (pflcWndZoomScale){
     return (*pflcWndZoomScale)(hLcWnd, Scal);
   }
@@ -2546,36 +5322,60 @@ BOOL LCAPI lcWndZoomScale (HANDLE hLcWnd, double Scal)
 
 
 //--------------
-BOOL LCAPI lcWndRedraw (HANDLE hLcWnd)
+BOOL LCAPI lcWndZoomMove (HANDLE hLcWnd, double DX, double DY)
 {
-  tflcWndRedraw pflcWndRedraw;
-  pflcWndRedraw = (tflcWndRedraw)GetProcAddress( ghLibInst, "lcWndRedraw" );
-  if (pflcWndRedraw){
-    return (*pflcWndRedraw)(hLcWnd);
+  if (pflcWndZoomMove){
+    return (*pflcWndZoomMove)(hLcWnd, DX, DY);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcWndSetFocus (HANDLE hLcWnd)
+BOOL LCAPI lcWndZoomPos (HANDLE hLcWnd, double Xc, double Yc, double PixSize)
 {
-  tflcWndSetFocus pflcWndSetFocus;
-  pflcWndSetFocus = (tflcWndSetFocus)GetProcAddress( ghLibInst, "lcWndSetFocus" );
-  if (pflcWndSetFocus){
-    return (*pflcWndSetFocus)(hLcWnd);
+  if (pflcWndZoomPos){
+    return (*pflcWndZoomPos)(hLcWnd, Xc, Yc, PixSize);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcWndExeCommand (HANDLE hLcWnd, int Command, int CmdParam)
+BOOL LCAPI lcWndZoomEnt (HANDLE hLcWnd, HANDLE hEnt, double Scal)
 {
-  tflcWndExeCommand pflcWndExeCommand;
-  pflcWndExeCommand = (tflcWndExeCommand)GetProcAddress( ghLibInst, "lcWndExeCommand" );
-  if (pflcWndExeCommand){
-    return (*pflcWndExeCommand)(hLcWnd, Command, CmdParam);
+  if (pflcWndZoomEnt){
+    return (*pflcWndZoomEnt)(hLcWnd, hEnt, Scal);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndGetCursorCoord (HANDLE hLcWnd, int* pXwin, int* pYwin, double* pXdrw, double* pYdrw)
+{
+  if (pflcWndGetCursorCoord){
+    return (*pflcWndGetCursorCoord)(hLcWnd, pXwin, pYwin, pXdrw, pYdrw);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcCoordDrwToWnd (HANDLE hLcWnd, double Xdrw, double Ydrw, int* pXwnd, int* pYwnd)
+{
+  if (pflcCoordDrwToWnd){
+    return (*pflcCoordDrwToWnd)(hLcWnd, Xdrw, Ydrw, pXwnd, pYwnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcCoordWndToDrw (HANDLE hLcWnd, int Xwnd, int Ywnd, double* pXdrw, double* pYdrw)
+{
+  if (pflcCoordWndToDrw){
+    return (*pflcCoordWndToDrw)(hLcWnd, Xwnd, Ywnd, pXdrw, pYdrw);
   }
   return 0;
 }
@@ -2584,8 +5384,6 @@ BOOL LCAPI lcWndExeCommand (HANDLE hLcWnd, int Command, int CmdParam)
 //--------------
 BOOL LCAPI lcWndCoordFromDrw (HANDLE hLcWnd, double Xdrw, double Ydrw, int* pXwin, int* pYwin)
 {
-  tflcWndCoordFromDrw pflcWndCoordFromDrw;
-  pflcWndCoordFromDrw = (tflcWndCoordFromDrw)GetProcAddress( ghLibInst, "lcWndCoordFromDrw" );
   if (pflcWndCoordFromDrw){
     return (*pflcWndCoordFromDrw)(hLcWnd, Xdrw, Ydrw, pXwin, pYwin);
   }
@@ -2596,8 +5394,6 @@ BOOL LCAPI lcWndCoordFromDrw (HANDLE hLcWnd, double Xdrw, double Ydrw, int* pXwi
 //--------------
 BOOL LCAPI lcWndCoordToDrw (HANDLE hLcWnd, int Xwin, int Ywin, double* pXdrw, double* pYdrw)
 {
-  tflcWndCoordToDrw pflcWndCoordToDrw;
-  pflcWndCoordToDrw = (tflcWndCoordToDrw)GetProcAddress( ghLibInst, "lcWndCoordToDrw" );
   if (pflcWndCoordToDrw){
     return (*pflcWndCoordToDrw)(hLcWnd, Xwin, Ywin, pXdrw, pYdrw);
   }
@@ -2606,22 +5402,8 @@ BOOL LCAPI lcWndCoordToDrw (HANDLE hLcWnd, int Xwin, int Ywin, double* pXdrw, do
 
 
 //--------------
-BOOL LCAPI lcWndGetCursorCoord (HANDLE hLcWnd, int* pXwin, int* pYwin, double* pXdrw, double* pYdrw)
-{
-  tflcWndGetCursorCoord pflcWndGetCursorCoord;
-  pflcWndGetCursorCoord = (tflcWndGetCursorCoord)GetProcAddress( ghLibInst, "lcWndGetCursorCoord" );
-  if (pflcWndGetCursorCoord){
-    return (*pflcWndGetCursorCoord)(hLcWnd, pXwin, pYwin, pXdrw, pYdrw);
-  }
-  return 0;
-}
-
-
-//--------------
 HANDLE LCAPI lcWndGetEntByPoint (HANDLE hLcWnd, int Xwin, int Ywin)
 {
-  tflcWndGetEntByPoint pflcWndGetEntByPoint;
-  pflcWndGetEntByPoint = (tflcWndGetEntByPoint)GetProcAddress( ghLibInst, "lcWndGetEntByPoint" );
   if (pflcWndGetEntByPoint){
     return (*pflcWndGetEntByPoint)(hLcWnd, Xwin, Ywin);
   }
@@ -2630,180 +5412,360 @@ HANDLE LCAPI lcWndGetEntByPoint (HANDLE hLcWnd, int Xwin, int Ywin)
 
 
 //--------------
-BOOL LCAPI lcWndSetCmdwin (HANDLE hLcWnd, HANDLE hCmdLine)
+HANDLE LCAPI lcWndGetEntByPoint2 (HANDLE hLcWnd, double X, double Y, double Delta)
 {
-  tflcWndSetCmdwin pflcWndSetCmdwin;
-  pflcWndSetCmdwin = (tflcWndSetCmdwin)GetProcAddress( ghLibInst, "lcWndSetCmdwin" );
-  if (pflcWndSetCmdwin){
-    return (*pflcWndSetCmdwin)(hLcWnd, hCmdLine);
+  if (pflcWndGetEntByPoint2){
+    return (*pflcWndGetEntByPoint2)(hLcWnd, X, Y, Delta);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcWndSetPropwin (HANDLE hLcWnd, HANDLE hPropWnd)
+int LCAPI lcWndGetEntsByPoint (HANDLE hLcWnd, int Xwin, int Ywin, int nMaxEnts)
 {
-  tflcWndSetPropwin pflcWndSetPropwin;
-  pflcWndSetPropwin = (tflcWndSetPropwin)GetProcAddress( ghLibInst, "lcWndSetPropwin" );
-  if (pflcWndSetPropwin){
-    return (*pflcWndSetPropwin)(hLcWnd, hPropWnd);
+  if (pflcWndGetEntsByPoint){
+    return (*pflcWndGetEntsByPoint)(hLcWnd, Xwin, Ywin, nMaxEnts);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcWndOnClose (HANDLE hLcWnd)
+int LCAPI lcWndGetEntsByRect (HANDLE hLcWnd, double Lef, double Bot, double Rig, double Top, BOOL bCross, int nMaxEnts)
 {
-  tflcWndOnClose pflcWndOnClose;
-  pflcWndOnClose = (tflcWndOnClose)GetProcAddress( ghLibInst, "lcWndOnClose" );
-  if (pflcWndOnClose){
-    return (*pflcWndOnClose)(hLcWnd);
+  if (pflcWndGetEntsByRect){
+    return (*pflcWndGetEntsByRect)(hLcWnd, Lef, Bot, Rig, Top, bCross, nMaxEnts);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcWndGetPoint (HANDLE hLcWnd, LPCWSTR szPrompt, int SnapMode, int Index, double* pX, double* pY)
+HANDLE LCAPI lcWndGetEntity (int iEnt)
 {
-  tflcWndGetPoint pflcWndGetPoint;
-  pflcWndGetPoint = (tflcWndGetPoint)GetProcAddress( ghLibInst, "lcWndGetPoint" );
-  if (pflcWndGetPoint){
-    return (*pflcWndGetPoint)(hLcWnd, szPrompt, SnapMode, Index, pX, pY);
+  if (pflcWndGetEntity){
+    return (*pflcWndGetEntity)(iEnt);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcWndGetPointBuf (HANDLE hLcWnd, int Index, double* pX, double* pY)
+HANDLE LCAPI lcWndGetEntByID (HANDLE hLcWnd, int Id)
 {
-  tflcWndGetPointBuf pflcWndGetPointBuf;
-  pflcWndGetPointBuf = (tflcWndGetPointBuf)GetProcAddress( ghLibInst, "lcWndGetPointBuf" );
-  if (pflcWndGetPointBuf){
-    return (*pflcWndGetPointBuf)(hLcWnd, Index, pX, pY);
+  if (pflcWndGetEntByID){
+    return (*pflcWndGetEntByID)(hLcWnd, Id);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCoordDrwToWnd (HANDLE hLcWnd, double Xdrw, double Ydrw, int* pXwin, int* pYwin)
+HANDLE LCAPI lcWndGetEntByIDH (HANDLE hLcWnd, LPCWSTR szId)
 {
-  tflcCoordDrwToWnd pflcCoordDrwToWnd;
-  pflcCoordDrwToWnd = (tflcCoordDrwToWnd)GetProcAddress( ghLibInst, "lcCoordDrwToWnd" );
-  if (pflcCoordDrwToWnd){
-    return (*pflcCoordDrwToWnd)(hLcWnd, Xdrw, Ydrw, pXwin, pYwin);
+  if (pflcWndGetEntByIDH){
+    return (*pflcWndGetEntByIDH)(hLcWnd, szId);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCoordWndToDrw (HANDLE hLcWnd, int Xwin, int Ywin, double* pXdrw, double* pYdrw)
+HANDLE LCAPI lcWndGetEntByKey (HANDLE hLcWnd, int Key)
 {
-  tflcCoordWndToDrw pflcCoordWndToDrw;
-  pflcCoordWndToDrw = (tflcCoordWndToDrw)GetProcAddress( ghLibInst, "lcCoordWndToDrw" );
-  if (pflcCoordWndToDrw){
-    return (*pflcCoordWndToDrw)(hLcWnd, Xwin, Ywin, pXdrw, pYdrw);
+  if (pflcWndGetEntByKey){
+    return (*pflcWndGetEntByKey)(hLcWnd, Key);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcColorIsRGB (LPCWSTR szColor)
+int LCAPI lcWndPickEnt (HANDLE hLcWnd, LPCWSTR szTitle, LPCWSTR szCursorText)
 {
-  tflcColorIsRGB pflcColorIsRGB;
-  pflcColorIsRGB = (tflcColorIsRGB)GetProcAddress( ghLibInst, "lcColorIsRGB" );
-  if (pflcColorIsRGB){
-    return (*pflcColorIsRGB)(szColor);
+  if (pflcWndPickEnt){
+    return (*pflcWndPickEnt)(hLcWnd, szTitle, szCursorText);
   }
   return 0;
 }
 
 
 //--------------
-int LCAPI lcColorGetRed (LPCWSTR szColor)
+HANDLE LCAPI lcFontGetFirst ()
 {
-  tflcColorGetRed pflcColorGetRed;
-  pflcColorGetRed = (tflcColorGetRed)GetProcAddress( ghLibInst, "lcColorGetRed" );
-  if (pflcColorGetRed){
-    return (*pflcColorGetRed)(szColor);
+  if (pflcFontGetFirst){
+    return (*pflcFontGetFirst)();
   }
   return 0;
 }
 
 
 //--------------
-int LCAPI lcColorGetGreen (LPCWSTR szColor)
+HANDLE LCAPI lcFontGetNext (HANDLE hFont)
 {
-  tflcColorGetGreen pflcColorGetGreen;
-  pflcColorGetGreen = (tflcColorGetGreen)GetProcAddress( ghLibInst, "lcColorGetGreen" );
-  if (pflcColorGetGreen){
-    return (*pflcColorGetGreen)(szColor);
+  if (pflcFontGetNext){
+    return (*pflcFontGetNext)(hFont);
   }
   return 0;
 }
 
 
 //--------------
-int LCAPI lcColorGetBlue (LPCWSTR szColor)
+HANDLE LCAPI lcFontAddRes (LPCWSTR szFontName, HANDLE hModule, int idResource)
 {
-  tflcColorGetBlue pflcColorGetBlue;
-  pflcColorGetBlue = (tflcColorGetBlue)GetProcAddress( ghLibInst, "lcColorGetBlue" );
-  if (pflcColorGetBlue){
-    return (*pflcColorGetBlue)(szColor);
+  if (pflcFontAddRes){
+    return (*pflcFontAddRes)(szFontName, hModule, idResource);
   }
   return 0;
 }
 
 
 //--------------
-int LCAPI lcColorGetIndex (LPCWSTR szColor)
+HANDLE LCAPI lcFontAddFile (LPCWSTR szFontName, LPCWSTR szFilename, WCHAR* szOutFontName)
 {
-  tflcColorGetIndex pflcColorGetIndex;
-  pflcColorGetIndex = (tflcColorGetIndex)GetProcAddress( ghLibInst, "lcColorGetIndex" );
-  if (pflcColorGetIndex){
-    return (*pflcColorGetIndex)(szColor);
+  if (pflcFontAddFile){
+    return (*pflcFontAddFile)(szFontName, szFilename, szOutFontName);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcColorToVal (LPCWSTR szColor, int* pbRGB, int* pIndex, int* pR, int* pG, int* pB)
+HANDLE LCAPI lcFontAddBin (LPCWSTR szFontName, HANDLE hData)
 {
-  tflcColorToVal pflcColorToVal;
-  pflcColorToVal = (tflcColorToVal)GetProcAddress( ghLibInst, "lcColorToVal" );
-  if (pflcColorToVal){
-    return (*pflcColorToVal)(szColor, pbRGB, pIndex, pR, pG, pB);
+  if (pflcFontAddBin){
+    return (*pflcFontAddBin)(szFontName, hData);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcColorSetPalette (int Index, int R, int G, int B)
+HANDLE LCAPI lcFontGetChar (HANDLE hFont, int CharCode)
 {
-  tflcColorSetPalette pflcColorSetPalette;
-  pflcColorSetPalette = (tflcColorSetPalette)GetProcAddress( ghLibInst, "lcColorSetPalette" );
-  if (pflcColorSetPalette){
-    return (*pflcColorSetPalette)(Index, R, G, B);
+  if (pflcFontGetChar){
+    return (*pflcFontGetChar)(hFont, CharCode);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcColorGetPalette (int Index, int* pR, int* pG, int* pB)
+LPCWSTR LCAPI lcFontGetName (LPCWSTR szFilename)
 {
-  tflcColorGetPalette pflcColorGetPalette;
-  pflcColorGetPalette = (tflcColorGetPalette)GetProcAddress( ghLibInst, "lcColorGetPalette" );
-  if (pflcColorGetPalette){
-    return (*pflcColorGetPalette)(Index, pR, pG, pB);
+  if (pflcFontGetName){
+    return (*pflcFontGetName)(szFilename);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcProgressCreate (HANDLE hLcWnd, int W, int H, LPCWSTR szTitle)
+{
+  if (pflcProgressCreate){
+    return (*pflcProgressCreate)(hLcWnd, W, H, szTitle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcProgressSetText (LPCWSTR szText)
+{
+  if (pflcProgressSetText){
+    return (*pflcProgressSetText)(szText);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcProgressStart (int MinVal, int MaxVal)
+{
+  if (pflcProgressStart){
+    return (*pflcProgressStart)(MinVal, MaxVal);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcProgressSetPos (int Val)
+{
+  if (pflcProgressSetPos){
+    return (*pflcProgressSetPos)(Val);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcProgressInc ()
+{
+  if (pflcProgressInc){
+    return (*pflcProgressInc)();
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcProgressDelete ()
+{
+  if (pflcProgressDelete){
+    return (*pflcProgressDelete)();
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcQuadCreate ()
+{
+  if (pflcQuadCreate){
+    return (*pflcQuadCreate)();
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcQuadDelete (HANDLE hQuad)
+{
+  if (pflcQuadDelete){
+    return (*pflcQuadDelete)(hQuad);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcQuadSet (HANDLE hQuad, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3)
+{
+  if (pflcQuadSet){
+    return (*pflcQuadSet)(hQuad, x0, y0, x1, y1, x2, y2, x3, y3);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcQuadTransXYtoUV (HANDLE hQuad, double X, double Y, double* pU, double* pV)
+{
+  if (pflcQuadTransXYtoUV){
+    return (*pflcQuadTransXYtoUV)(hQuad, X, Y, pU, pV);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcQuadTransUVtoXY (HANDLE hQuad, double U, double V, double* pX, double* pY)
+{
+  if (pflcQuadTransUVtoXY){
+    return (*pflcQuadTransUVtoXY)(hQuad, U, V, pX, pY);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcQuadContains (HANDLE hQuad, double X, double Y)
+{
+  if (pflcQuadContains){
+    return (*pflcQuadContains)(hQuad, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcGridCreate ()
+{
+  if (pflcGridCreate){
+    return (*pflcGridCreate)();
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGridDelete (HANDLE hGrid)
+{
+  if (pflcGridDelete){
+    return (*pflcGridDelete)(hGrid);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGridSet (HANDLE hGrid, double X0, double Y0, double W, double H, int Nx, int Ny)
+{
+  if (pflcGridSet){
+    return (*pflcGridSet)(hGrid, X0, Y0, W, H, Nx, Ny);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGridSetDest (HANDLE hGrid, int Ix, int Iy, double X, double Y)
+{
+  if (pflcGridSetDest){
+    return (*pflcGridSetDest)(hGrid, Ix, Iy, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGridUpdate (HANDLE hGrid)
+{
+  if (pflcGridUpdate){
+    return (*pflcGridUpdate)(hGrid);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGridTrans (HANDLE hGrid, double X, double Y, double* pXdest, double* pYdest)
+{
+  if (pflcGridTrans){
+    return (*pflcGridTrans)(hGrid, X, Y, pXdest, pYdest);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGridGetNode (HANDLE hGrid, BOOL bDest, int Ix, int Iy, double* pX, double* pY)
+{
+  if (pflcGridGetNode){
+    return (*pflcGridGetNode)(hGrid, bDest, Ix, Iy, pX, pY);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGridGetCell (HANDLE hGrid, double X, double Y, int* pIx, int* pIy)
+{
+  if (pflcGridGetCell){
+    return (*pflcGridGetCell)(hGrid, X, Y, pIx, pIy);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGridSetView (HANDLE hGrid, int Mode, HANDLE hLcWnd, COLORREF ColLine, COLORREF ColNode)
+{
+  if (pflcGridSetView){
+    return (*pflcGridSetView)(hGrid, Mode, hLcWnd, ColLine, ColNode);
   }
   return 0;
 }
@@ -2812,8 +5774,6 @@ BOOL LCAPI lcColorGetPalette (int Index, int* pR, int* pG, int* pB)
 //--------------
 HANDLE LCAPI lcCreateCmdwin (HWND hWndParent, int Left, int Top, int Width, int Height)
 {
-  tflcCreateCmdwin pflcCreateCmdwin;
-  pflcCreateCmdwin = (tflcCreateCmdwin)GetProcAddress( ghLibInst, "lcCreateCmdwin" );
   if (pflcCreateCmdwin){
     return (*pflcCreateCmdwin)(hWndParent, Left, Top, Width, Height);
   }
@@ -2824,8 +5784,6 @@ HANDLE LCAPI lcCreateCmdwin (HWND hWndParent, int Left, int Top, int Width, int 
 //--------------
 BOOL LCAPI lcCmdwinResize (HANDLE hCmdLine, int Left, int Top, int Width, int Height)
 {
-  tflcCmdwinResize pflcCmdwinResize;
-  pflcCmdwinResize = (tflcCmdwinResize)GetProcAddress( ghLibInst, "lcCmdwinResize" );
   if (pflcCmdwinResize){
     return (*pflcCmdwinResize)(hCmdLine, Left, Top, Width, Height);
   }
@@ -2834,36 +5792,158 @@ BOOL LCAPI lcCmdwinResize (HANDLE hCmdLine, int Left, int Top, int Width, int He
 
 
 //--------------
-HANDLE LCAPI lcCreatePropwin (HWND hWndParent, int Left, int Top, int Width, int Height)
+BOOL LCAPI lcCmdwinUpdate (HANDLE hCmdLine)
 {
-  tflcCreatePropwin pflcCreatePropwin;
-  pflcCreatePropwin = (tflcCreatePropwin)GetProcAddress( ghLibInst, "lcCreatePropwin" );
-  if (pflcCreatePropwin){
-    return (*pflcCreatePropwin)(hWndParent, Left, Top, Width, Height);
+  if (pflcCmdwinUpdate){
+    return (*pflcCmdwinUpdate)(hCmdLine);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcPropwinResize (HANDLE hPropWnd, int Left, int Top, int Width, int Height)
+HANDLE LCAPI lcCreateProps (HWND hWndParent, int Mode)
 {
-  tflcPropwinResize pflcPropwinResize;
-  pflcPropwinResize = (tflcPropwinResize)GetProcAddress( ghLibInst, "lcPropwinResize" );
-  if (pflcPropwinResize){
-    return (*pflcPropwinResize)(hPropWnd, Left, Top, Width, Height);
+  if (pflcCreateProps){
+    return (*pflcCreateProps)(hWndParent, Mode);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcPropwinUpdate (HANDLE hPropWnd, BOOL bSelChanged)
+BOOL LCAPI lcDeleteProps (HANDLE hPropWnd)
 {
-  tflcPropwinUpdate pflcPropwinUpdate;
-  pflcPropwinUpdate = (tflcPropwinUpdate)GetProcAddress( ghLibInst, "lcPropwinUpdate" );
-  if (pflcPropwinUpdate){
-    return (*pflcPropwinUpdate)(hPropWnd, bSelChanged);
+  if (pflcDeleteProps){
+    return (*pflcDeleteProps)(hPropWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPropsResize (HANDLE hPropWnd, int Left, int Top, int Width, int Height)
+{
+  if (pflcPropsResize){
+    return (*pflcPropsResize)(hPropWnd, Left, Top, Width, Height);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPropsUpdate (HANDLE hPropWnd, BOOL bSelChanged)
+{
+  if (pflcPropsUpdate){
+    return (*pflcPropsUpdate)(hPropWnd, bSelChanged);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcCreateStatbar (HWND hWndParent)
+{
+  if (pflcCreateStatbar){
+    return (*pflcCreateStatbar)(hWndParent);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDeleteStatbar (HANDLE hStatbar)
+{
+  if (pflcDeleteStatbar){
+    return (*pflcDeleteStatbar)(hStatbar);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcStatbarResize (HANDLE hStatbar, int Left, int Top, int Width, int Height)
+{
+  if (pflcStatbarResize){
+    return (*pflcStatbarResize)(hStatbar, Left, Top, Width, Height);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcStatbarCell (HANDLE hStatbar, int Id, int Pos)
+{
+  if (pflcStatbarCell){
+    return (*pflcStatbarCell)(hStatbar, Id, Pos);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcStatbarText (HANDLE hStatbar, int Id, LPCWSTR szText)
+{
+  if (pflcStatbarText){
+    return (*pflcStatbarText)(hStatbar, Id, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcStatbarRedraw (HANDLE hStatbar)
+{
+  if (pflcStatbarRedraw){
+    return (*pflcStatbarRedraw)(hStatbar);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDgGetValue (HANDLE hWnd, int Lef, int Top, LPCWSTR szTitle, LPCWSTR szPrompt)
+{
+  if (pflcDgGetValue){
+    return (*pflcDgGetValue)(hWnd, Lef, Top, szTitle, szPrompt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcHelp (LPCWSTR szTopic)
+{
+  if (pflcHelp){
+    return (*pflcHelp)(szTopic);
+  }
+  return 0;
+}
+
+
+//--------------
+void LCAPI lcGetPolarPoint (double x0, double y0, double Angle, double Dist, double* pOutX, double* pOutY)
+{
+  if (pflcGetPolarPoint){
+    (*pflcGetPolarPoint)(x0, y0, Angle, Dist, pOutX, pOutY);
+  }
+}
+
+
+//--------------
+void LCAPI lcGetPolarPrm (double x1, double y1, double x2, double y2, double* pAngle, double* pDist)
+{
+  if (pflcGetPolarPrm){
+    (*pflcGetPolarPrm)(x1, y1, x2, y2, pAngle, pDist);
+  }
+}
+
+
+//--------------
+BOOL LCAPI lcGetClientSize (HWND hWnd, int* pWidth, int* pHeight)
+{
+  if (pflcGetClientSize){
+    return (*pflcGetClientSize)(hWnd, pWidth, pHeight);
   }
   return 0;
 }
@@ -2872,8 +5952,6 @@ BOOL LCAPI lcPropwinUpdate (HANDLE hPropWnd, BOOL bSelChanged)
 //--------------
 int LCAPI lcGetErrorCode ()
 {
-  tflcGetErrorCode pflcGetErrorCode;
-  pflcGetErrorCode = (tflcGetErrorCode)GetProcAddress( ghLibInst, "lcGetErrorCode" );
   if (pflcGetErrorCode){
     return (*pflcGetErrorCode)();
   }
@@ -2884,8 +5962,6 @@ int LCAPI lcGetErrorCode ()
 //--------------
 LPCWSTR LCAPI lcGetErrorStr ()
 {
-  tflcGetErrorStr pflcGetErrorStr;
-  pflcGetErrorStr = (tflcGetErrorStr)GetProcAddress( ghLibInst, "lcGetErrorStr" );
   if (pflcGetErrorStr){
     return (*pflcGetErrorStr)();
   }
@@ -2894,81 +5970,38 @@ LPCWSTR LCAPI lcGetErrorStr ()
 
 
 //--------------
-int LCAPI lcExtractPreview (LPCWSTR szFileName, HGLOBAL hGlob, int MaxSize)
+BOOL LCAPI lcGetStr (int Mode)
 {
-  tflcExtractPreview pflcExtractPreview;
-  pflcExtractPreview = (tflcExtractPreview)GetProcAddress( ghLibInst, "lcExtractPreview" );
-  if (pflcExtractPreview){
-    return (*pflcExtractPreview)(szFileName, hGlob, MaxSize);
+  if (pflcGetStr){
+    return (*pflcGetStr)(Mode);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcExtractFileInfo (LPCWSTR szFileName, WCHAR* szGuid, WCHAR* szComment, int* pInt0, int* pInt1)
+BOOL LCAPI lcGetDrwXData (LPCWSTR szFileName)
 {
-  tflcExtractFileInfo pflcExtractFileInfo;
-  pflcExtractFileInfo = (tflcExtractFileInfo)GetProcAddress( ghLibInst, "lcExtractFileInfo" );
-  if (pflcExtractFileInfo){
-    return (*pflcExtractFileInfo)(szFileName, szGuid, szComment, pInt0, pInt1);
+  if (pflcGetDrwXData){
+    return (*pflcGetDrwXData)(szFileName);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcGetClientSize (HWND hWnd, int* pWidth, int* pHeight)
+int LCAPI lcGetDrwPreview (LPCWSTR szFileName, BYTE* pOutDIB)
 {
-  tflcGetClientSize pflcGetClientSize;
-  pflcGetClientSize = (tflcGetClientSize)GetProcAddress( ghLibInst, "lcGetClientSize" );
-  if (pflcGetClientSize){
-    return (*pflcGetClientSize)(hWnd, pWidth, pHeight);
+  if (pflcGetDrwPreview){
+    return (*pflcGetDrwPreview)(szFileName, pOutDIB);
   }
   return 0;
-}
-
-
-//--------------
-LPCWSTR LCAPI lcGetFileName (HWND hWnd, int Mode)
-{
-  tflcGetFileName pflcGetFileName;
-  pflcGetFileName = (tflcGetFileName)GetProcAddress( ghLibInst, "lcGetFileName" );
-  if (pflcGetFileName){
-    return (*pflcGetFileName)(hWnd, Mode);
-  }
-  return 0;
-}
-
-
-//--------------
-LPCWSTR LCAPI lcGetValue (HWND hWnd, int Lef, int Top, LPCWSTR szCaption, LPCWSTR szPrompt, LPCWSTR szValue)
-{
-  tflcGetValue pflcGetValue;
-  pflcGetValue = (tflcGetValue)GetProcAddress( ghLibInst, "lcGetValue" );
-  if (pflcGetValue){
-    return (*pflcGetValue)(hWnd, Lef, Top, szCaption, szPrompt, szValue);
-  }
-  return 0;
-}
-
-
-//--------------
-void LCAPI lcTextOut (HDC hDC, int x, int y, LPCWSTR szText, int ColorRGB)
-{
-  tflcTextOut pflcTextOut;
-  pflcTextOut = (tflcTextOut)GetProcAddress( ghLibInst, "lcTextOut" );
-  if (pflcTextOut){
-    (*pflcTextOut)(hDC, x, y, szText, ColorRGB);
-  }
 }
 
 
 //--------------
 BOOL LCAPI lcFilletSetLines (double L1x0, double L1y0, double L1x1, double L1y1, double L2x0, double L2y0, double L2x1, double L2y1)
 {
-  tflcFilletSetLines pflcFilletSetLines;
-  pflcFilletSetLines = (tflcFilletSetLines)GetProcAddress( ghLibInst, "lcFilletSetLines" );
   if (pflcFilletSetLines){
     return (*pflcFilletSetLines)(L1x0, L1y0, L1x1, L1y1, L2x0, L2y0, L2x1, L2y1);
   }
@@ -2979,8 +6012,6 @@ BOOL LCAPI lcFilletSetLines (double L1x0, double L1y0, double L1x1, double L1y1,
 //--------------
 BOOL LCAPI lcFillet (double Rad, double Bis, double Tang)
 {
-  tflcFillet pflcFillet;
-  pflcFillet = (tflcFillet)GetProcAddress( ghLibInst, "lcFillet" );
   if (pflcFillet){
     return (*pflcFillet)(Rad, Bis, Tang);
   }
@@ -2991,8 +6022,6 @@ BOOL LCAPI lcFillet (double Rad, double Bis, double Tang)
 //--------------
 BOOL LCAPI lcFilletGetPoint (int iPnt, double* pX, double* pY)
 {
-  tflcFilletGetPoint pflcFilletGetPoint;
-  pflcFilletGetPoint = (tflcFilletGetPoint)GetProcAddress( ghLibInst, "lcFilletGetPoint" );
   if (pflcFilletGetPoint){
     return (*pflcFilletGetPoint)(iPnt, pX, pY);
   }
@@ -3001,811 +6030,4760 @@ BOOL LCAPI lcFilletGetPoint (int iPnt, double* pX, double* pY)
 
 
 //--------------
-HANDLE LCAPI lcCreateCommand (HANDLE hLcWnd, int Id, LPCWSTR szName, BOOL bNeedSel)
+int LCAPI lcFileToStrA (LPCWSTR szFileName, char* pBuf)
 {
-  tflcCreateCommand pflcCreateCommand;
-  pflcCreateCommand = (tflcCreateCommand)GetProcAddress( ghLibInst, "lcCreateCommand" );
+  if (pflcFileToStrA){
+    return (*pflcFileToStrA)(szFileName, pBuf);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcCreateCommand (HANDLE hLcWnd, int Id, LPCWSTR szTitle)
+{
   if (pflcCreateCommand){
-    return (*pflcCreateCommand)(hLcWnd, Id, szName, bNeedSel);
+    return (*pflcCreateCommand)(hLcWnd, Id, szTitle);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdExit ()
+BOOL LCAPI lcCmdExit (HANDLE hCmd)
 {
-  tflcCmdExit pflcCmdExit;
-  pflcCmdExit = (tflcCmdExit)GetProcAddress( ghLibInst, "lcCmdExit" );
   if (pflcCmdExit){
-    return (*pflcCmdExit)();
+    return (*pflcCmdExit)(hCmd);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdPrompt (HANDLE hCmd, LPCWSTR szText)
+BOOL LCAPI lcCmdCursorText (HANDLE hCmd, LPCWSTR szText)
 {
-  tflcCmdPrompt pflcCmdPrompt;
-  pflcCmdPrompt = (tflcCmdPrompt)GetProcAddress( ghLibInst, "lcCmdPrompt" );
-  if (pflcCmdPrompt){
-    return (*pflcCmdPrompt)(hCmd, szText);
+  if (pflcCmdCursorText){
+    return (*pflcCmdCursorText)(hCmd, szText);
   }
   return 0;
 }
 
 
 //--------------
-HANDLE LCAPI lcCmdGetEntByPoint (HANDLE hCmd, int Xwnd, int Ywnd)
+int LCAPI lcCmdMessage (HANDLE hCmd, LPCWSTR szText, int uType)
 {
-  tflcCmdGetEntByPoint pflcCmdGetEntByPoint;
-  pflcCmdGetEntByPoint = (tflcCmdGetEntByPoint)GetProcAddress( ghLibInst, "lcCmdGetEntByPoint" );
-  if (pflcCmdGetEntByPoint){
-    return (*pflcCmdGetEntByPoint)(hCmd, Xwnd, Ywnd);
+  if (pflcCmdMessage){
+    return (*pflcCmdMessage)(hCmd, szText, uType);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdSelectEnt (HANDLE hCmd, HANDLE hEntity, BOOL bSelect)
+BOOL LCAPI lcCmdResetLastPt (HANDLE hCmd)
 {
-  tflcCmdSelectEnt pflcCmdSelectEnt;
-  pflcCmdSelectEnt = (tflcCmdSelectEnt)GetProcAddress( ghLibInst, "lcCmdSelectEnt" );
-  if (pflcCmdSelectEnt){
-    return (*pflcCmdSelectEnt)(hCmd, hEntity, bSelect);
+  if (pflcCmdResetLastPt){
+    return (*pflcCmdResetLastPt)(hCmd);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdRedraw (HANDLE hCmd)
+BOOL LCAPI lcTIS_InitLibrary (LPCWSTR szLicenseKey, BOOL bErrMsg)
 {
-  tflcCmdRedraw pflcCmdRedraw;
-  pflcCmdRedraw = (tflcCmdRedraw)GetProcAddress( ghLibInst, "lcCmdRedraw" );
-  if (pflcCmdRedraw){
-    return (*pflcCmdRedraw)(hCmd);
+  if (pflcTIS_InitLibrary){
+    return (*pflcTIS_InitLibrary)(szLicenseKey, bErrMsg);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdSetFocus (HANDLE hCmd)
+BOOL LCAPI lcTIS_CloseLibrary ()
 {
-  tflcCmdSetFocus pflcCmdSetFocus;
-  pflcCmdSetFocus = (tflcCmdSetFocus)GetProcAddress( ghLibInst, "lcCmdSetFocus" );
-  if (pflcCmdSetFocus){
-    return (*pflcCmdSetFocus)(hCmd);
+  if (pflcTIS_CloseLibrary){
+    return (*pflcTIS_CloseLibrary)();
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdRegen (HANDLE hCmd, HANDLE hEnt)
+BOOL LCAPI lcCameraConnect (LPCWSTR szName)
 {
-  tflcCmdRegen pflcCmdRegen;
-  pflcCmdRegen = (tflcCmdRegen)GetProcAddress( ghLibInst, "lcCmdRegen" );
-  if (pflcCmdRegen){
-    return (*pflcCmdRegen)(hCmd, hEnt);
+  if (pflcCameraConnect){
+    return (*pflcCameraConnect)(szName);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdClearPoints (HANDLE hCmd)
+BOOL LCAPI lcCameraDisconnect ()
 {
-  tflcCmdClearPoints pflcCmdClearPoints;
-  pflcCmdClearPoints = (tflcCmdClearPoints)GetProcAddress( ghLibInst, "lcCmdClearPoints" );
-  if (pflcCmdClearPoints){
-    return (*pflcCmdClearPoints)(hCmd);
+  if (pflcCameraDisconnect){
+    return (*pflcCameraDisconnect)();
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdAddPoint (HANDLE hCmd, int Id, double X, double Y)
+BOOL LCAPI lcCameraShot ()
 {
-  tflcCmdAddPoint pflcCmdAddPoint;
-  pflcCmdAddPoint = (tflcCmdAddPoint)GetProcAddress( ghLibInst, "lcCmdAddPoint" );
-  if (pflcCmdAddPoint){
-    return (*pflcCmdAddPoint)(hCmd, Id, X, Y);
+  if (pflcCameraShot){
+    return (*pflcCameraShot)();
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdGetPoint (HANDLE hCmd, int Id, double* pX, double* pY)
+HANDLE LCAPI lcCreateDrawing ()
 {
-  tflcCmdGetPoint pflcCmdGetPoint;
-  pflcCmdGetPoint = (tflcCmdGetPoint)GetProcAddress( ghLibInst, "lcCmdGetPoint" );
-  if (pflcCmdGetPoint){
-    return (*pflcCmdGetPoint)(hCmd, Id, pX, pY);
+  if (pflcCreateDrawing){
+    return (*pflcCreateDrawing)();
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdSetBasePoint (HANDLE hCmd, BOOL bEnable, double X, double Y)
+BOOL LCAPI lcDeleteDrawing (HANDLE hDrw)
 {
-  tflcCmdSetBasePoint pflcCmdSetBasePoint;
-  pflcCmdSetBasePoint = (tflcCmdSetBasePoint)GetProcAddress( ghLibInst, "lcCmdSetBasePoint" );
-  if (pflcCmdSetBasePoint){
-    return (*pflcCmdSetBasePoint)(hCmd, bEnable, X, Y);
+  if (pflcDeleteDrawing){
+    return (*pflcDeleteDrawing)(hDrw);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdDrawLine (HANDLE hCmd, double X0, double Y0, double X1, double Y1)
+BOOL LCAPI lcDrwNew (HANDLE hDrw, LPCWSTR szFileName, HANDLE hLcWnd)
 {
-  tflcCmdDrawLine pflcCmdDrawLine;
-  pflcCmdDrawLine = (tflcCmdDrawLine)GetProcAddress( ghLibInst, "lcCmdDrawLine" );
-  if (pflcCmdDrawLine){
-    return (*pflcCmdDrawLine)(hCmd, X0, Y0, X1, Y1);
+  if (pflcDrwNew){
+    return (*pflcDrwNew)(hDrw, szFileName, hLcWnd);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdDrawPickbox (HANDLE hCmd, int Xwnd, int Ywnd)
+BOOL LCAPI lcDrwLoad (HANDLE hDrw, LPCWSTR szFileName, HANDLE hLcWnd)
 {
-  tflcCmdDrawPickbox pflcCmdDrawPickbox;
-  pflcCmdDrawPickbox = (tflcCmdDrawPickbox)GetProcAddress( ghLibInst, "lcCmdDrawPickbox" );
-  if (pflcCmdDrawPickbox){
-    return (*pflcCmdDrawPickbox)(hCmd, Xwnd, Ywnd);
+  if (pflcDrwLoad){
+    return (*pflcDrwLoad)(hDrw, szFileName, hLcWnd);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCmdEqualPoints (HANDLE hCmd, double X0, double Y0, double X1, double Y1, int Delta)
+BOOL LCAPI lcDrwLoadMem (HANDLE hDrw, HANDLE hMem, HANDLE hLcWnd)
 {
-  tflcCmdEqualPoints pflcCmdEqualPoints;
-  pflcCmdEqualPoints = (tflcCmdEqualPoints)GetProcAddress( ghLibInst, "lcCmdEqualPoints" );
-  if (pflcCmdEqualPoints){
-    return (*pflcCmdEqualPoints)(hCmd, X0, Y0, X1, Y1, Delta);
+  if (pflcDrwLoadMem){
+    return (*pflcDrwLoadMem)(hDrw, hMem, hLcWnd);
   }
   return 0;
 }
 
 
 //--------------
-void LCAPI lcSurfInitialize (int MaxSectPnt, double AngStep)
+BOOL LCAPI lcDxfLoadMem (HANDLE hDrw, HANDLE hMem, HANDLE hLcWnd)
 {
-  tflcSurfInitialize pflcSurfInitialize;
-  pflcSurfInitialize = (tflcSurfInitialize)GetProcAddress( ghLibInst, "lcSurfInitialize" );
-  if (pflcSurfInitialize){
-    (*pflcSurfInitialize)(MaxSectPnt, AngStep);
-  }
-}
-
-
-//--------------
-void LCAPI lcSurfUnInitialize ()
-{
-  tflcSurfUnInitialize pflcSurfUnInitialize;
-  pflcSurfUnInitialize = (tflcSurfUnInitialize)GetProcAddress( ghLibInst, "lcSurfUnInitialize" );
-  if (pflcSurfUnInitialize){
-    (*pflcSurfUnInitialize)();
-  }
-}
-
-
-//--------------
-void LCAPI lcSurfClearTriangles ()
-{
-  tflcSurfClearTriangles pflcSurfClearTriangles;
-  pflcSurfClearTriangles = (tflcSurfClearTriangles)GetProcAddress( ghLibInst, "lcSurfClearTriangles" );
-  if (pflcSurfClearTriangles){
-    (*pflcSurfClearTriangles)();
-  }
-}
-
-
-//--------------
-BOOL LCAPI lcSurfAddTriangle (double X0, double Y0, double Z0, double X1, double Y1, double Z1, double X2, double Y2, double Z2)
-{
-  tflcSurfAddTriangle pflcSurfAddTriangle;
-  pflcSurfAddTriangle = (tflcSurfAddTriangle)GetProcAddress( ghLibInst, "lcSurfAddTriangle" );
-  if (pflcSurfAddTriangle){
-    return (*pflcSurfAddTriangle)(X0, Y0, Z0, X1, Y1, Z1, X2, Y2, Z2);
+  if (pflcDxfLoadMem){
+    return (*pflcDxfLoadMem)(hDrw, hMem, hLcWnd);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcSurfGetZ (double X, double Y, double* pZ)
+HANDLE LCAPI lcDrwLoadTIN (HANDLE hDrw, LPCWSTR szFileName, HANDLE hLcWnd)
 {
-  tflcSurfGetZ pflcSurfGetZ;
-  pflcSurfGetZ = (tflcSurfGetZ)GetProcAddress( ghLibInst, "lcSurfGetZ" );
-  if (pflcSurfGetZ){
-    return (*pflcSurfGetZ)(X, Y, pZ);
+  if (pflcDrwLoadTIN){
+    return (*pflcDrwLoadTIN)(hDrw, szFileName, hLcWnd);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcSurfGetZ_dbg (double X, double Y, double* pZ, double* pX0, double* pY0, double* pZ0, double* pX1, double* pY1, double* pZ1, double* pX2, double* pY2, double* pZ2)
+BOOL LCAPI lcDrwSaveTIN (HANDLE hDrw, HANDLE hLcWnd)
 {
-  tflcSurfGetZ_dbg pflcSurfGetZ_dbg;
-  pflcSurfGetZ_dbg = (tflcSurfGetZ_dbg)GetProcAddress( ghLibInst, "lcSurfGetZ_dbg" );
-  if (pflcSurfGetZ_dbg){
-    return (*pflcSurfGetZ_dbg)(X, Y, pZ, pX0, pY0, pZ0, pX1, pY1, pZ1, pX2, pY2, pZ2);
+  if (pflcDrwSaveTIN){
+    return (*pflcDrwSaveTIN)(hDrw, hLcWnd);
   }
   return 0;
 }
 
 
 //--------------
-void LCAPI lcSurfClearPlan ()
+BOOL LCAPI lcDrwInsert (HANDLE hDrw, LPCWSTR szFileName, int Overwrite, HANDLE hLcWnd)
 {
-  tflcSurfClearPlan pflcSurfClearPlan;
-  pflcSurfClearPlan = (tflcSurfClearPlan)GetProcAddress( ghLibInst, "lcSurfClearPlan" );
-  if (pflcSurfClearPlan){
-    (*pflcSurfClearPlan)();
-  }
-}
-
-
-//--------------
-BOOL LCAPI lcSurfAddPlanVer (double X, double Y, double Bulge)
-{
-  tflcSurfAddPlanVer pflcSurfAddPlanVer;
-  pflcSurfAddPlanVer = (tflcSurfAddPlanVer)GetProcAddress( ghLibInst, "lcSurfAddPlanVer" );
-  if (pflcSurfAddPlanVer){
-    return (*pflcSurfAddPlanVer)(X, Y, Bulge);
+  if (pflcDrwInsert){
+    return (*pflcDrwInsert)(hDrw, szFileName, Overwrite, hLcWnd);
   }
   return 0;
 }
 
 
 //--------------
-int LCAPI lcSurfMakeSection ()
+BOOL LCAPI lcDrwInsertSHP (HANDLE hDrw, HANDLE hLayer, LPCWSTR szFileName, HANDLE hLcWnd)
 {
-  tflcSurfMakeSection pflcSurfMakeSection;
-  pflcSurfMakeSection = (tflcSurfMakeSection)GetProcAddress( ghLibInst, "lcSurfMakeSection" );
-  if (pflcSurfMakeSection){
-    return (*pflcSurfMakeSection)();
+  if (pflcDrwInsertSHP){
+    return (*pflcDrwInsertSHP)(hDrw, hLayer, szFileName, hLcWnd);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcSurfGetSectPoint (int iPnt, double* pX, double* pY, double* pZ)
+BOOL LCAPI lcDrwCopy (HANDLE hDrw, HANDLE hDrwSrc)
 {
-  tflcSurfGetSectPoint pflcSurfGetSectPoint;
-  pflcSurfGetSectPoint = (tflcSurfGetSectPoint)GetProcAddress( ghLibInst, "lcSurfGetSectPoint" );
-  if (pflcSurfGetSectPoint){
-    return (*pflcSurfGetSectPoint)(iPnt, pX, pY, pZ);
+  if (pflcDrwCopy){
+    return (*pflcDrwCopy)(hDrw, hDrwSrc);
   }
   return 0;
 }
 
 
 //--------------
-void LCAPI lcCrossSetTolerance (double Zero1, double One1, double Zero2, double One2, double NearPt, double Clas, double CutGr, double RigPt)
+BOOL LCAPI lcDrwSave (HANDLE hDrw, LPCWSTR szFileName, BOOL bBak, HANDLE hLcWnd)
 {
-  tflcCrossSetTolerance pflcCrossSetTolerance;
-  pflcCrossSetTolerance = (tflcCrossSetTolerance)GetProcAddress( ghLibInst, "lcCrossSetTolerance" );
-  if (pflcCrossSetTolerance){
-    (*pflcCrossSetTolerance)(Zero1, One1, Zero2, One2, NearPt, Clas, CutGr, RigPt);
-  }
-}
-
-
-//--------------
-BOOL LCAPI lcCrossClear ()
-{
-  tflcCrossClear pflcCrossClear;
-  pflcCrossClear = (tflcCrossClear)GetProcAddress( ghLibInst, "lcCrossClear" );
-  if (pflcCrossClear){
-    return (*pflcCrossClear)();
+  if (pflcDrwSave){
+    return (*pflcDrwSave)(hDrw, szFileName, bBak, hLcWnd);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCrossBegin (int PlineType)
+int LCAPI lcDrwSaveMem (HANDLE hDrw, HANDLE hMem, int MemSize)
 {
-  tflcCrossBegin pflcCrossBegin;
-  pflcCrossBegin = (tflcCrossBegin)GetProcAddress( ghLibInst, "lcCrossBegin" );
-  if (pflcCrossBegin){
-    return (*pflcCrossBegin)(PlineType);
+  if (pflcDrwSaveMem){
+    return (*pflcDrwSaveMem)(hDrw, hMem, MemSize);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCrossAddPoint (double X, double Y)
+HANDLE LCAPI lcDrwAddLayer (HANDLE hDrw, LPCWSTR szName, LPCWSTR szColor, HANDLE hLtype, int Lwidth)
 {
-  tflcCrossAddPoint pflcCrossAddPoint;
-  pflcCrossAddPoint = (tflcCrossAddPoint)GetProcAddress( ghLibInst, "lcCrossAddPoint" );
-  if (pflcCrossAddPoint){
-    return (*pflcCrossAddPoint)(X, Y);
+  if (pflcDrwAddLayer){
+    return (*pflcDrwAddLayer)(hDrw, szName, szColor, hLtype, Lwidth);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCrossEnd ()
+HANDLE LCAPI lcDrwAddLayer2 (HANDLE hDrw, LPCWSTR szName, HANDLE hFromLayer)
 {
-  tflcCrossEnd pflcCrossEnd;
-  pflcCrossEnd = (tflcCrossEnd)GetProcAddress( ghLibInst, "lcCrossEnd" );
-  if (pflcCrossEnd){
-    return (*pflcCrossEnd)();
+  if (pflcDrwAddLayer2){
+    return (*pflcDrwAddLayer2)(hDrw, szName, hFromLayer);
   }
   return 0;
 }
 
 
 //--------------
-int LCAPI lcCrossCalcArea ()
+HANDLE LCAPI lcDrwAddLinetype (HANDLE hDrw, LPCWSTR szName, LPCWSTR szDefinition)
 {
-  tflcCrossCalcArea pflcCrossCalcArea;
-  pflcCrossCalcArea = (tflcCrossCalcArea)GetProcAddress( ghLibInst, "lcCrossCalcArea" );
-  if (pflcCrossCalcArea){
-    return (*pflcCrossCalcArea)();
+  if (pflcDrwAddLinetype){
+    return (*pflcDrwAddLinetype)(hDrw, szName, szDefinition);
   }
   return 0;
 }
 
 
 //--------------
-int LCAPI lcCrossCalcArea2 (HANDLE hDrw, int GroundKey, int RoadKey, int LinkKey)
+HANDLE LCAPI lcDrwAddLinetypeF (HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, LPCWSTR szLtypeName)
 {
-  tflcCrossCalcArea2 pflcCrossCalcArea2;
-  pflcCrossCalcArea2 = (tflcCrossCalcArea2)GetProcAddress( ghLibInst, "lcCrossCalcArea2" );
-  if (pflcCrossCalcArea2){
-    return (*pflcCrossCalcArea2)(hDrw, GroundKey, RoadKey, LinkKey);
+  if (pflcDrwAddLinetypeF){
+    return (*pflcDrwAddLinetypeF)(hDrw, szName, szFileName, szLtypeName);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCrossGetArea (int iArea, double* pAreaVal, int* pNumPnts)
+HANDLE LCAPI lcDrwAddTextStyle (HANDLE hDrw, LPCWSTR szName, LPCWSTR szFontName, BOOL bWinFont)
 {
-  tflcCrossGetArea pflcCrossGetArea;
-  pflcCrossGetArea = (tflcCrossGetArea)GetProcAddress( ghLibInst, "lcCrossGetArea" );
-  if (pflcCrossGetArea){
-    return (*pflcCrossGetArea)(iArea, pAreaVal, pNumPnts);
+  if (pflcDrwAddTextStyle){
+    return (*pflcDrwAddTextStyle)(hDrw, szName, szFontName, bWinFont);
   }
   return 0;
 }
 
 
 //--------------
-BOOL LCAPI lcCrossGetAreaPoint (int iArea, int iPnt, double* pX, double* pY)
+HANDLE LCAPI lcDrwAddDimStyle (HANDLE hDrw, LPCWSTR szName)
 {
-  tflcCrossGetAreaPoint pflcCrossGetAreaPoint;
-  pflcCrossGetAreaPoint = (tflcCrossGetAreaPoint)GetProcAddress( ghLibInst, "lcCrossGetAreaPoint" );
-  if (pflcCrossGetAreaPoint){
-    return (*pflcCrossGetAreaPoint)(iArea, iPnt, pX, pY);
+  if (pflcDrwAddDimStyle){
+    return (*pflcDrwAddDimStyle)(hDrw, szName);
   }
   return 0;
 }
 
 
 //--------------
-void LCAPI lcEventReturnCode (int code)
+HANDLE LCAPI lcDrwAddMlineStyle (HANDLE hDrw, LPCWSTR szName)
 {
-  tflcEventReturnCode pflcEventReturnCode;
-  pflcEventReturnCode = (tflcEventReturnCode)GetProcAddress( ghLibInst, "lcEventReturnCode" );
-  if (pflcEventReturnCode){
-    (*pflcEventReturnCode)(code);
+  if (pflcDrwAddMlineStyle){
+    return (*pflcDrwAddMlineStyle)(hDrw, szName);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddPntStyle (HANDLE hDrw, LPCWSTR szName, HANDLE hBlock, double BlockScale, HANDLE hTStyle, double TextHeight, double TextWidth)
+{
+  if (pflcDrwAddPntStyle){
+    return (*pflcDrwAddPntStyle)(hDrw, szName, hBlock, BlockScale, hTStyle, TextHeight, TextWidth);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddFilling (HANDLE hDrw, LPCWSTR szName)
+{
+  if (pflcDrwAddFilling){
+    return (*pflcDrwAddFilling)(hDrw, szName);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddImage (HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName)
+{
+  if (pflcDrwAddImage){
+    return (*pflcDrwAddImage)(hDrw, szName, szFileName);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddImage2 (HANDLE hDrw, LPCWSTR szName, int Width, int Height, int nBits, HANDLE hData, BOOL bTopDown)
+{
+  if (pflcDrwAddImage2){
+    return (*pflcDrwAddImage2)(hDrw, szName, Width, Height, nBits, hData, bTopDown);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddImage3 (HANDLE hDrw, LPCWSTR szName, HANDLE hMem)
+{
+  if (pflcDrwAddImage3){
+    return (*pflcDrwAddImage3)(hDrw, szName, hMem);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddImageCam (HANDLE hDrw, LPCWSTR szName)
+{
+  if (pflcDrwAddImageCam){
+    return (*pflcDrwAddImageCam)(hDrw, szName);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddBlock (HANDLE hDrw, LPCWSTR szName, double X, double Y)
+{
+  if (pflcDrwAddBlock){
+    return (*pflcDrwAddBlock)(hDrw, szName, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddBlockFromFile (HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, int Overwrite, HWND hwParent)
+{
+  if (pflcDrwAddBlockFromFile){
+    return (*pflcDrwAddBlockFromFile)(hDrw, szName, szFileName, Overwrite, hwParent);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddBlockFromDrw (HANDLE hDrw, LPCWSTR szName, HANDLE hDrw2, int Overwrite, HWND hwParent)
+{
+  if (pflcDrwAddBlockFromDrw){
+    return (*pflcDrwAddBlockFromDrw)(hDrw, szName, hDrw2, Overwrite, hwParent);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddBlockFile (HANDLE hDrw, LPCWSTR szName, LPCWSTR szFileName, int Overwrite, HWND hwParent)
+{
+  if (pflcDrwAddBlockFile){
+    return (*pflcDrwAddBlockFile)(hDrw, szName, szFileName, Overwrite, hwParent);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddBlockPaper (HANDLE hDrw, LPCWSTR szName, int PaperSize, int Orient, double Width, double Height)
+{
+  if (pflcDrwAddBlockPaper){
+    return (*pflcDrwAddBlockPaper)(hDrw, szName, PaperSize, Orient, Width, Height);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwAddBlockCopy (HANDLE hDrw, LPCWSTR szName, HANDLE hSrcBlock)
+{
+  if (pflcDrwAddBlockCopy){
+    return (*pflcDrwAddBlockCopy)(hDrw, szName, hSrcBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDrwDeleteObject (HANDLE hDrw, HANDLE hObject)
+{
+  if (pflcDrwDeleteObject){
+    return (*pflcDrwDeleteObject)(hDrw, hObject);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcDrwDeleteUnused (HANDLE hDrw, int ObjType)
+{
+  if (pflcDrwDeleteUnused){
+    return (*pflcDrwDeleteUnused)(hDrw, ObjType);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcDrwCountObjects (HANDLE hDrw, int ObjType)
+{
+  if (pflcDrwCountObjects){
+    return (*pflcDrwCountObjects)(hDrw, ObjType);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDrwSortObjects (HANDLE hDrw, int ObjType)
+{
+  if (pflcDrwSortObjects){
+    return (*pflcDrwSortObjects)(hDrw, ObjType);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDrwUpdateWinFonts (HANDLE hDrw, HANDLE hTStyle)
+{
+  if (pflcDrwUpdateWinFonts){
+    return (*pflcDrwUpdateWinFonts)(hDrw, hTStyle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDrwUpdateBlkRefs (HANDLE hDrw, HANDLE hBlock)
+{
+  if (pflcDrwUpdateBlkRefs){
+    return (*pflcDrwUpdateBlkRefs)(hDrw, hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDrwUpdateTexts (HANDLE hDrw, HANDLE hTStyle)
+{
+  if (pflcDrwUpdateTexts){
+    return (*pflcDrwUpdateTexts)(hDrw, hTStyle);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwGetFirstObject (HANDLE hDrw, int ObjType)
+{
+  if (pflcDrwGetFirstObject){
+    return (*pflcDrwGetFirstObject)(hDrw, ObjType);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwGetNextObject (HANDLE hDrw, HANDLE hObject)
+{
+  if (pflcDrwGetNextObject){
+    return (*pflcDrwGetNextObject)(hDrw, hObject);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwGetObjectByID (HANDLE hDrw, int ObjType, int Id)
+{
+  if (pflcDrwGetObjectByID){
+    return (*pflcDrwGetObjectByID)(hDrw, ObjType, Id);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwGetObjectByIDH (HANDLE hDrw, int ObjType, LPCWSTR szId)
+{
+  if (pflcDrwGetObjectByIDH){
+    return (*pflcDrwGetObjectByIDH)(hDrw, ObjType, szId);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwGetObjectByName (HANDLE hDrw, int ObjType, LPCWSTR szName)
+{
+  if (pflcDrwGetObjectByName){
+    return (*pflcDrwGetObjectByName)(hDrw, ObjType, szName);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwGetEntByID (HANDLE hDrw, int Id)
+{
+  if (pflcDrwGetEntByID){
+    return (*pflcDrwGetEntByID)(hDrw, Id);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwGetEntByIDH (HANDLE hDrw, LPCWSTR szId)
+{
+  if (pflcDrwGetEntByIDH){
+    return (*pflcDrwGetEntByIDH)(hDrw, szId);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcDrwGetEntByKey (HANDLE hDrw, int Key)
+{
+  if (pflcDrwGetEntByKey){
+    return (*pflcDrwGetEntByKey)(hDrw, Key);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDrwClearXData (HANDLE hDrw, int ObjType, int Mode)
+{
+  if (pflcDrwClearXData){
+    return (*pflcDrwClearXData)(hDrw, ObjType, Mode);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDrwPurge (HANDLE hDrw)
+{
+  if (pflcDrwPurge){
+    return (*pflcDrwPurge)(hDrw);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDrwExplode (HANDLE hDrw, int Mode)
+{
+  if (pflcDrwExplode){
+    return (*pflcDrwExplode)(hDrw, Mode);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDrwSetLimits (HANDLE hDrw, double Xmin, double Ymin, double Xmax, double Ymax)
+{
+  if (pflcDrwSetLimits){
+    return (*pflcDrwSetLimits)(hDrw, Xmin, Ymin, Xmax, Ymax);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDrwUndoRecord (HANDLE hDrw, int Mode)
+{
+  if (pflcDrwUndoRecord){
+    return (*pflcDrwUndoRecord)(hDrw, Mode);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcDrwUndo (HANDLE hDrw, BOOL bRedo)
+{
+  if (pflcDrwUndo){
+    return (*pflcDrwUndo)(hDrw, bRedo);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcCRectsClear (HANDLE hDrw)
+{
+  if (pflcCRectsClear){
+    return (*pflcCRectsClear)(hDrw);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcCRectsAdd (HANDLE hDrw, int ID, double Lef, double Bot, double Width, double Height)
+{
+  if (pflcCRectsAdd){
+    return (*pflcCRectsAdd)(hDrw, ID, Lef, Bot, Width, Height);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcCRectsDivide (HANDLE hDrw, int NumX, int NumY, BOOL bClearExist)
+{
+  if (pflcCRectsDivide){
+    return (*pflcCRectsDivide)(hDrw, NumX, NumY, bClearExist);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcCRectsGetFirst (HANDLE hDrw)
+{
+  if (pflcCRectsGetFirst){
+    return (*pflcCRectsGetFirst)(hDrw);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcCRectsGetNext (HANDLE hDrw, HANDLE hCRect)
+{
+  if (pflcCRectsGetNext){
+    return (*pflcCRectsGetNext)(hDrw, hCRect);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcCRectsGetWithID (HANDLE hDrw, int Id)
+{
+  if (pflcCRectsGetWithID){
+    return (*pflcCRectsGetWithID)(hDrw, Id);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcCRectsActive (HANDLE hDrw, HANDLE hCRect)
+{
+  if (pflcCRectsActive){
+    return (*pflcCRectsActive)(hDrw, hCRect);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcCRectsGetActive (HANDLE hDrw)
+{
+  if (pflcCRectsGetActive){
+    return (*pflcCRectsGetActive)(hDrw);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcCRectsDelete (HANDLE hDrw, HANDLE hCRect)
+{
+  if (pflcCRectsDelete){
+    return (*pflcCRectsDelete)(hDrw, hCRect);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcCRectsSave (HANDLE hDrw, HANDLE hCRect, LPCWSTR szFileName)
+{
+  if (pflcCRectsSave){
+    return (*pflcCRectsSave)(hDrw, hCRect, szFileName);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcCRectsBitmap (HANDLE hDrw, HANDLE hCRect, LPCWSTR szFileName, double PixelSize)
+{
+  if (pflcCRectsBitmap){
+    return (*pflcCRectsBitmap)(hDrw, hCRect, szFileName, PixelSize);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSetViewRect (HANDLE hBlock, double Xcen, double Ycen, double Width, double Height)
+{
+  if (pflcBlockSetViewRect){
+    return (*pflcBlockSetViewRect)(hBlock, Xcen, Ycen, Width, Height);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSetViewRect2 (HANDLE hBlock, double Lef, double Bot, double Rig, double Top)
+{
+  if (pflcBlockSetViewRect2){
+    return (*pflcBlockSetViewRect2)(hBlock, Lef, Bot, Rig, Top);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSetPaperSize (HANDLE hBlock, int PaperSize, int Orient, double Width, double Height)
+{
+  if (pflcBlockSetPaperSize){
+    return (*pflcBlockSetPaperSize)(hBlock, PaperSize, Orient, Width, Height);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockRasterize (HANDLE hBlock, LPCWSTR szFileName, double Xmin, double Ymin, double Xmax, double Ymax, int ImgW, int ImgH)
+{
+  if (pflcBlockRasterize){
+    return (*pflcBlockRasterize)(hBlock, szFileName, Xmin, Ymin, Xmax, Ymax, ImgW, ImgH);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcBlockRasterizeMem (HANDLE hBlock, HANDLE hMem, double Xmin, double Ymin, double Xmax, double Ymax, int ImgW, int ImgH)
+{
+  if (pflcBlockRasterizeMem){
+    return (*pflcBlockRasterizeMem)(hBlock, hMem, Xmin, Ymin, Xmax, Ymax, ImgW, ImgH);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockUpdate (HANDLE hBlock, BOOL bUpdEnts, HANDLE hNewEnt)
+{
+  if (pflcBlockUpdate){
+    return (*pflcBlockUpdate)(hBlock, bUpdEnts, hNewEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockMove (HANDLE hBlock, double dX, double dY, BOOL bUpdate)
+{
+  if (pflcBlockMove){
+    return (*pflcBlockMove)(hBlock, dX, dY, bUpdate);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockScale (HANDLE hBlock, double X, double Y, double Scal, BOOL bUpdate)
+{
+  if (pflcBlockScale){
+    return (*pflcBlockScale)(hBlock, X, Y, Scal, bUpdate);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockRotate (HANDLE hBlock, double X, double Y, double Angle, BOOL bUpdate)
+{
+  if (pflcBlockRotate){
+    return (*pflcBlockRotate)(hBlock, X, Y, Angle, bUpdate);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockMirror (HANDLE hBlock, double X1, double Y1, double X2, double Y2, BOOL bUpdate)
+{
+  if (pflcBlockMirror){
+    return (*pflcBlockMirror)(hBlock, X1, Y1, X2, Y2, bUpdate);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockClear (HANDLE hBlock, HANDLE hLayer)
+{
+  if (pflcBlockClear){
+    return (*pflcBlockClear)(hBlock, hLayer);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockPurge (HANDLE hBlock)
+{
+  if (pflcBlockPurge){
+    return (*pflcBlockPurge)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSortEnts (HANDLE hBlock, BOOL bByLayers, HWND hWnd)
+{
+  if (pflcBlockSortEnts){
+    return (*pflcBlockSortEnts)(hBlock, bByLayers, hWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSortEnts2 (HANDLE hBlock, HANDLE idEnts, int nEnts)
+{
+  if (pflcBlockSortEnts2){
+    return (*pflcBlockSortEnts2)(hBlock, idEnts, nEnts);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddPoint (HANDLE hBlock, double X, double Y)
+{
+  if (pflcBlockAddPoint){
+    return (*pflcBlockAddPoint)(hBlock, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddPoint2 (HANDLE hBlock, double X, double Y, int PtMode, double PtSize)
+{
+  if (pflcBlockAddPoint2){
+    return (*pflcBlockAddPoint2)(hBlock, X, Y, PtMode, PtSize);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddPoint3d (HANDLE hBlock, double X, double Y, double Z)
+{
+  if (pflcBlockAddPoint3d){
+    return (*pflcBlockAddPoint3d)(hBlock, X, Y, Z);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcBlockAddPointsF (HANDLE hBlock, LPCWSTR szFileName, HWND hWnd)
+{
+  if (pflcBlockAddPointsF){
+    return (*pflcBlockAddPointsF)(hBlock, szFileName, hWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddXline (HANDLE hBlock, double X, double Y, double Angle, BOOL bRay)
+{
+  if (pflcBlockAddXline){
+    return (*pflcBlockAddXline)(hBlock, X, Y, Angle, bRay);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddXline2P (HANDLE hBlock, double X, double Y, double X2, double Y2, BOOL bRay)
+{
+  if (pflcBlockAddXline2P){
+    return (*pflcBlockAddXline2P)(hBlock, X, Y, X2, Y2, bRay);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddLine (HANDLE hBlock, double X1, double Y1, double X2, double Y2)
+{
+  if (pflcBlockAddLine){
+    return (*pflcBlockAddLine)(hBlock, X1, Y1, X2, Y2);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddLineDir (HANDLE hBlock, double X, double Y, double Angle, double Dist)
+{
+  if (pflcBlockAddLineDir){
+    return (*pflcBlockAddLineDir)(hBlock, X, Y, Angle, Dist);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddLineTan (HANDLE hBlock, HANDLE hEnt1, HANDLE hEnt2, int Mode)
+{
+  if (pflcBlockAddLineTan){
+    return (*pflcBlockAddLineTan)(hBlock, hEnt1, hEnt2, Mode);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddPolyline (HANDLE hBlock, int FitType, BOOL bClosed, BOOL bFilled)
+{
+  if (pflcBlockAddPolyline){
+    return (*pflcBlockAddPolyline)(hBlock, FitType, bClosed, bFilled);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddRPolygon (HANDLE hBlock, int nVers, double Xc, double Yc, double R, double Ang0, BOOL bInscribed, BOOL bFilled)
+{
+  if (pflcBlockAddRPolygon){
+    return (*pflcBlockAddRPolygon)(hBlock, nVers, Xc, Yc, R, Ang0, bInscribed, bFilled);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddSpline (HANDLE hBlock, BOOL bClosed, BOOL bFilled)
+{
+  if (pflcBlockAddSpline){
+    return (*pflcBlockAddSpline)(hBlock, bClosed, bFilled);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddBezier (HANDLE hBlock)
+{
+  if (pflcBlockAddBezier){
+    return (*pflcBlockAddBezier)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddMline (HANDLE hBlock, int FitType, BOOL bClosed)
+{
+  if (pflcBlockAddMline){
+    return (*pflcBlockAddMline)(hBlock, FitType, bClosed);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddRect (HANDLE hBlock, double Xc, double Yc, double Width, double Height, double Angle, BOOL bFilled)
+{
+  if (pflcBlockAddRect){
+    return (*pflcBlockAddRect)(hBlock, Xc, Yc, Width, Height, Angle, bFilled);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddRect2 (HANDLE hBlock, double Left, double Bottom, double Width, double Height, double Rad, BOOL bFilled)
+{
+  if (pflcBlockAddRect2){
+    return (*pflcBlockAddRect2)(hBlock, Left, Bottom, Width, Height, Rad, bFilled);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddCircle (HANDLE hBlock, double X, double Y, double Radius, BOOL bFilled)
+{
+  if (pflcBlockAddCircle){
+    return (*pflcBlockAddCircle)(hBlock, X, Y, Radius, bFilled);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddArc (HANDLE hBlock, double X, double Y, double Radius, double StartAngle, double ArcAngle)
+{
+  if (pflcBlockAddArc){
+    return (*pflcBlockAddArc)(hBlock, X, Y, Radius, StartAngle, ArcAngle);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddArc3P (HANDLE hBlock, double X1, double Y1, double X2, double Y2, double X3, double Y3)
+{
+  if (pflcBlockAddArc3P){
+    return (*pflcBlockAddArc3P)(hBlock, X1, Y1, X2, Y2, X3, Y3);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddFillet (HANDLE hBlock, HANDLE hEnt1, HANDLE hEnt2, double Radius)
+{
+  if (pflcBlockAddFillet){
+    return (*pflcBlockAddFillet)(hBlock, hEnt1, hEnt2, Radius);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddEllipse (HANDLE hBlock, double X, double Y, double R1, double R2, double RotAngle, double StartAngle, double ArcAngle)
+{
+  if (pflcBlockAddEllipse){
+    return (*pflcBlockAddEllipse)(hBlock, X, Y, R1, R2, RotAngle, StartAngle, ArcAngle);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddText (HANDLE hBlock, LPCWSTR szText, double X, double Y)
+{
+  if (pflcBlockAddText){
+    return (*pflcBlockAddText)(hBlock, szText, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddText2 (HANDLE hBlock, LPCWSTR szText, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique)
+{
+  if (pflcBlockAddText2){
+    return (*pflcBlockAddText2)(hBlock, szText, X, Y, Align, H, WScale, RotAngle, Oblique);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddText3 (HANDLE hBlock, LPCWSTR szText, double X1, double Y1, double X2, double Y2, int Align, double HW, double Oblique)
+{
+  if (pflcBlockAddText3){
+    return (*pflcBlockAddText3)(hBlock, szText, X1, Y1, X2, Y2, Align, HW, Oblique);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddTextWin (HANDLE hBlock, LPCWSTR szText, double X, double Y)
+{
+  if (pflcBlockAddTextWin){
+    return (*pflcBlockAddTextWin)(hBlock, szText, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddTextWin2 (HANDLE hBlock, LPCWSTR szText, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique)
+{
+  if (pflcBlockAddTextWin2){
+    return (*pflcBlockAddTextWin2)(hBlock, szText, X, Y, Align, H, WScale, RotAngle, Oblique);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddMText (HANDLE hBlock, LPCWSTR szText, double X, double Y, double WrapWidth, int Align, double RotAngle, double H, double WScale)
+{
+  if (pflcBlockAddMText){
+    return (*pflcBlockAddMText)(hBlock, szText, X, Y, WrapWidth, Align, RotAngle, H, WScale);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddArcText (HANDLE hBlock, LPCWSTR szText, double X, double Y, double Radius, double StartAngle, BOOL bClockwise, double H, double WScale, int Align)
+{
+  if (pflcBlockAddArcText){
+    return (*pflcBlockAddArcText)(hBlock, szText, X, Y, Radius, StartAngle, bClockwise, H, WScale, Align);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddBlockRef (HANDLE hBlock, HANDLE hRefBlock, double X, double Y, double Scal, double Angle)
+{
+  if (pflcBlockAddBlockRef){
+    return (*pflcBlockAddBlockRef)(hBlock, hRefBlock, X, Y, Scal, Angle);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddBlockRefID (HANDLE hBlock, int idRefBlock, double X, double Y, double Scal, double Angle)
+{
+  if (pflcBlockAddBlockRefID){
+    return (*pflcBlockAddBlockRefID)(hBlock, idRefBlock, X, Y, Scal, Angle);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddBlockRefIDH (HANDLE hBlock, LPCWSTR szIdRefBlock, double X, double Y, double Scal, double Angle)
+{
+  if (pflcBlockAddBlockRefIDH){
+    return (*pflcBlockAddBlockRefIDH)(hBlock, szIdRefBlock, X, Y, Scal, Angle);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddAttDef (HANDLE hBlock, int Mode, LPCWSTR szTag, LPCWSTR szPrompt, LPCWSTR szDefVal, double X, double Y, int Align, double H, double WScale, double RotAngle, double Oblique)
+{
+  if (pflcBlockAddAttDef){
+    return (*pflcBlockAddAttDef)(hBlock, Mode, szTag, szPrompt, szDefVal, X, Y, Align, H, WScale, RotAngle, Oblique);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddXref (HANDLE hBlock, LPCWSTR szFileName, double X, double Y, double ScalX, double ScalY, double Angle)
+{
+  if (pflcBlockAddXref){
+    return (*pflcBlockAddXref)(hBlock, szFileName, X, Y, ScalX, ScalY, Angle);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddImageRef (HANDLE hBlock, HANDLE hImage, double X, double Y, double Width, double Height, BOOL bBorder)
+{
+  if (pflcBlockAddImageRef){
+    return (*pflcBlockAddImageRef)(hBlock, hImage, X, Y, Width, Height, bBorder);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddImageRefUns (HANDLE hBlock, HANDLE hImage, double X, double Y, double Scal, int Align, BOOL bBorder)
+{
+  if (pflcBlockAddImageRefUns){
+    return (*pflcBlockAddImageRefUns)(hBlock, hImage, X, Y, Scal, Align, bBorder);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddImagePlace (HANDLE hBlock, int Id, double X, double Y, double Width, double Height, BOOL bBorder)
+{
+  if (pflcBlockAddImagePlace){
+    return (*pflcBlockAddImagePlace)(hBlock, Id, X, Y, Width, Height, bBorder);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddEcw (HANDLE hBlock, LPCWSTR szFileName)
+{
+  if (pflcBlockAddEcw){
+    return (*pflcBlockAddEcw)(hBlock, szFileName);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddBarcode (HANDLE hBlock, int BarType, double Xc, double Yc, double Width, double Height, LPCWSTR szText)
+{
+  if (pflcBlockAddBarcode){
+    return (*pflcBlockAddBarcode)(hBlock, BarType, Xc, Yc, Width, Height, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddHatch (HANDLE hBlock, LPCWSTR szFileName, LPCWSTR szPatName, double Scal, double Angle)
+{
+  if (pflcBlockAddHatch){
+    return (*pflcBlockAddHatch)(hBlock, szFileName, szPatName, Scal, Angle);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddViewport (HANDLE hBlock, double Lef, double Bot, double Width, double Height, double DrwPntX, double DrwPntY, double DrwScale, double DrwAngle)
+{
+  if (pflcBlockAddViewport){
+    return (*pflcBlockAddViewport)(hBlock, Lef, Bot, Width, Height, DrwPntX, DrwPntY, DrwScale, DrwAngle);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddFace (HANDLE hBlock, int Flags, double x0, double y0, double z0, double x1, double y1, double z1, double x2, double y2, double z2)
+{
+  if (pflcBlockAddFace){
+    return (*pflcBlockAddFace)(hBlock, Flags, x0, y0, z0, x1, y1, z1, x2, y2, z2);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddFace4 (HANDLE hBlock, int Flags, double x0, double y0, double z0, double x1, double y1, double z1, double x2, double y2, double z2, double x3, double y3, double z3)
+{
+  if (pflcBlockAddFace4){
+    return (*pflcBlockAddFace4)(hBlock, Flags, x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddLeader (HANDLE hBlock, LPCWSTR szText, double Xt, double Yt, double LandDist, double Xa, double Ya, int Attach, int Align)
+{
+  if (pflcBlockAddLeader){
+    return (*pflcBlockAddLeader)(hBlock, szText, Xt, Yt, LandDist, Xa, Ya, Attach, Align);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimLin (HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, double Yt, double Angle, LPCWSTR szText)
+{
+  if (pflcBlockAddDimLin){
+    return (*pflcBlockAddDimLin)(hBlock, X0, Y0, X1, Y1, Xt, Yt, Angle, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimHor (HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Yt, LPCWSTR szText)
+{
+  if (pflcBlockAddDimHor){
+    return (*pflcBlockAddDimHor)(hBlock, X0, Y0, X1, Y1, Yt, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimVer (HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, LPCWSTR szText)
+{
+  if (pflcBlockAddDimVer){
+    return (*pflcBlockAddDimVer)(hBlock, X0, Y0, X1, Y1, Xt, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimAli (HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Xt, double Yt, LPCWSTR szText)
+{
+  if (pflcBlockAddDimAli){
+    return (*pflcBlockAddDimAli)(hBlock, X0, Y0, X1, Y1, Xt, Yt, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimAli2 (HANDLE hBlock, double X0, double Y0, double X1, double Y1, double Dt, LPCWSTR szText)
+{
+  if (pflcBlockAddDimAli2){
+    return (*pflcBlockAddDimAli2)(hBlock, X0, Y0, X1, Y1, Dt, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimOrd (HANDLE hBlock, double Xd, double Yd, double Xt, double Yt, BOOL bX, LPCWSTR szText)
+{
+  if (pflcBlockAddDimOrd){
+    return (*pflcBlockAddDimOrd)(hBlock, Xd, Yd, Xt, Yt, bX, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimRad (HANDLE hBlock, double Xc, double Yc, double Xr, double Yr, double Xt, double Yt, LPCWSTR szText)
+{
+  if (pflcBlockAddDimRad){
+    return (*pflcBlockAddDimRad)(hBlock, Xc, Yc, Xr, Yr, Xt, Yt, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimRad2 (HANDLE hBlock, double Xc, double Yc, double R, double Angle, double TextOff, LPCWSTR szText)
+{
+  if (pflcBlockAddDimRad2){
+    return (*pflcBlockAddDimRad2)(hBlock, Xc, Yc, R, Angle, TextOff, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimDia (HANDLE hBlock, double Xc, double Yc, double Xr, double Yr, double Xt, double Yt, LPCWSTR szText)
+{
+  if (pflcBlockAddDimDia){
+    return (*pflcBlockAddDimDia)(hBlock, Xc, Yc, Xr, Yr, Xt, Yt, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimDia2 (HANDLE hBlock, double Xc, double Yc, double R, double Angle, double TextOff, LPCWSTR szText)
+{
+  if (pflcBlockAddDimDia2){
+    return (*pflcBlockAddDimDia2)(hBlock, Xc, Yc, R, Angle, TextOff, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimAng (HANDLE hBlock, double Xc, double Yc, double X1, double Y1, double X2, double Y2, double Xa, double Ya, double TextPos, LPCWSTR szText)
+{
+  if (pflcBlockAddDimAng){
+    return (*pflcBlockAddDimAng)(hBlock, Xc, Yc, X1, Y1, X2, Y2, Xa, Ya, TextPos, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddDimAng2 (HANDLE hBlock, double X1, double Y1, double X2, double Y2, double X3, double Y3, double X4, double Y4, double Xa, double Ya, double TextPos, LPCWSTR szText)
+{
+  if (pflcBlockAddDimAng2){
+    return (*pflcBlockAddDimAng2)(hBlock, X1, Y1, X2, Y2, X3, Y3, X4, Y4, Xa, Ya, TextPos, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddRPlan (HANDLE hBlock)
+{
+  if (pflcBlockAddRPlan){
+    return (*pflcBlockAddRPlan)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddRPlan2 (HANDLE hBlock, HANDLE hStartEnt)
+{
+  if (pflcBlockAddRPlan2){
+    return (*pflcBlockAddRPlan2)(hBlock, hStartEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddArrow (HANDLE hBlock, double X1, double Y1, double X2, double Y2)
+{
+  if (pflcBlockAddArrow){
+    return (*pflcBlockAddArrow)(hBlock, X1, Y1, X2, Y2);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddSpiral (HANDLE hBlock, double Xc, double Yc, double R, double Turns, BOOL bDirCW, BOOL bClosed)
+{
+  if (pflcBlockAddSpiral){
+    return (*pflcBlockAddSpiral)(hBlock, Xc, Yc, R, Turns, bDirCW, bClosed);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddCamview (HANDLE hBlock, double Lef, double Bot, double Width, double Height)
+{
+  if (pflcBlockAddCamview){
+    return (*pflcBlockAddCamview)(hBlock, Lef, Bot, Width, Height);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddTIN (HANDLE hBlock, LPCWSTR szFileName, int FileType)
+{
+  if (pflcBlockAddTIN){
+    return (*pflcBlockAddTIN)(hBlock, szFileName, FileType);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddClone (HANDLE hBlock, HANDLE hEnt)
+{
+  if (pflcBlockAddClone){
+    return (*pflcBlockAddClone)(hBlock, hEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockBeginShape (HANDLE hBlock)
+{
+  if (pflcBlockBeginShape){
+    return (*pflcBlockBeginShape)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddShape (HANDLE hBlock)
+{
+  if (pflcBlockAddShape){
+    return (*pflcBlockAddShape)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockAddShapeSel (HANDLE hBlock, BOOL bErase)
+{
+  if (pflcBlockAddShapeSel){
+    return (*pflcBlockAddShapeSel)(hBlock, bErase);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockRepEllipse (HANDLE hBlock, HANDLE hEll, int* pRetType)
+{
+  if (pflcBlockRepEllipse){
+    return (*pflcBlockRepEllipse)(hBlock, hEll, pRetType);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcBlockJoinAll (HANDLE hBlock, double Delta)
+{
+  if (pflcBlockJoinAll){
+    return (*pflcBlockJoinAll)(hBlock, Delta);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcBlockCopyLayer (HANDLE hBlock, HANDLE hLayerSrc, HANDLE hLayerDest)
+{
+  if (pflcBlockCopyLayer){
+    return (*pflcBlockCopyLayer)(hBlock, hLayerSrc, hLayerDest);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockDeleteEnt (HANDLE hBlock, HANDLE hEnt)
+{
+  if (pflcBlockDeleteEnt){
+    return (*pflcBlockDeleteEnt)(hBlock, hEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockGetFirstEnt (HANDLE hBlock)
+{
+  if (pflcBlockGetFirstEnt){
+    return (*pflcBlockGetFirstEnt)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockGetNextEnt (HANDLE hBlock, HANDLE hEnt)
+{
+  if (pflcBlockGetNextEnt){
+    return (*pflcBlockGetNextEnt)(hBlock, hEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockGetLastEnt (HANDLE hBlock)
+{
+  if (pflcBlockGetLastEnt){
+    return (*pflcBlockGetLastEnt)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockGetPrevEnt (HANDLE hBlock, HANDLE hEnt)
+{
+  if (pflcBlockGetPrevEnt){
+    return (*pflcBlockGetPrevEnt)(hBlock, hEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockGetEntByID (HANDLE hBlock, int Id)
+{
+  if (pflcBlockGetEntByID){
+    return (*pflcBlockGetEntByID)(hBlock, Id);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockGetEntByIDH (HANDLE hBlock, LPCWSTR szId)
+{
+  if (pflcBlockGetEntByIDH){
+    return (*pflcBlockGetEntByIDH)(hBlock, szId);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockGetEntByKey (HANDLE hBlock, int Key)
+{
+  if (pflcBlockGetEntByKey){
+    return (*pflcBlockGetEntByKey)(hBlock, Key);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockGetBlkRefByTag (HANDLE hBlock, HANDLE hBlockAtt, LPCWSTR szTag, LPCWSTR szValue, BOOL bSelect)
+{
+  if (pflcBlockGetBlkRefByTag){
+    return (*pflcBlockGetBlkRefByTag)(hBlock, hBlockAtt, szTag, szValue, bSelect);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockGetTIN (HANDLE hBlock, LPCWSTR szName)
+{
+  if (pflcBlockGetTIN){
+    return (*pflcBlockGetTIN)(hBlock, szName);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockUnselect (HANDLE hBlock)
+{
+  if (pflcBlockUnselect){
+    return (*pflcBlockUnselect)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSelectEnt (HANDLE hBlock, HANDLE hEntity, BOOL bSelect)
+{
+  if (pflcBlockSelectEnt){
+    return (*pflcBlockSelectEnt)(hBlock, hEntity, bSelect);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSelErase (HANDLE hBlock)
+{
+  if (pflcBlockSelErase){
+    return (*pflcBlockSelErase)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSelMove (HANDLE hBlock, double dX, double dY, BOOL bCopy, BOOL bNewSelect)
+{
+  if (pflcBlockSelMove){
+    return (*pflcBlockSelMove)(hBlock, dX, dY, bCopy, bNewSelect);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSelScale (HANDLE hBlock, double X0, double Y0, double Scal, BOOL bCopy, BOOL bNewSelect)
+{
+  if (pflcBlockSelScale){
+    return (*pflcBlockSelScale)(hBlock, X0, Y0, Scal, bCopy, bNewSelect);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSelRotate (HANDLE hBlock, double X0, double Y0, double Angle, BOOL bCopy, BOOL bNewSelect)
+{
+  if (pflcBlockSelRotate){
+    return (*pflcBlockSelRotate)(hBlock, X0, Y0, Angle, bCopy, bNewSelect);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSelMirror (HANDLE hBlock, double X1, double Y1, double X2, double Y2, BOOL bCopy, BOOL bNewSelect)
+{
+  if (pflcBlockSelMirror){
+    return (*pflcBlockSelMirror)(hBlock, X1, Y1, X2, Y2, bCopy, bNewSelect);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSelExplode (HANDLE hBlock)
+{
+  if (pflcBlockSelExplode){
+    return (*pflcBlockSelExplode)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSelSplit (HANDLE hBlock, int nParts)
+{
+  if (pflcBlockSelSplit){
+    return (*pflcBlockSelSplit)(hBlock, nParts);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockSelJoin (HANDLE hBlock, double Delta)
+{
+  if (pflcBlockSelJoin){
+    return (*pflcBlockSelJoin)(hBlock, Delta);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSelAlign (HANDLE hBlock, int Mode, double X, double Y)
+{
+  if (pflcBlockSelAlign){
+    return (*pflcBlockSelAlign)(hBlock, Mode, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockSelBlock (HANDLE hBlock, LPCWSTR szName, double X, double Y, int Mode, BOOL bOverwrite)
+{
+  if (pflcBlockSelBlock){
+    return (*pflcBlockSelBlock)(hBlock, szName, X, Y, Mode, bOverwrite);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockGetFirstSel (HANDLE hBlock)
+{
+  if (pflcBlockGetFirstSel){
+    return (*pflcBlockGetFirstSel)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlockGetNextSel (HANDLE hBlock)
+{
+  if (pflcBlockGetNextSel){
+    return (*pflcBlockGetNextSel)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockOrderByLayers (HANDLE hBlock, HWND hWnd)
+{
+  if (pflcBlockOrderByLayers){
+    return (*pflcBlockOrderByLayers)(hBlock, hWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlockSortTSP (HANDLE hBlock, HANDLE hLayer, HWND hWnd)
+{
+  if (pflcBlockSortTSP){
+    return (*pflcBlockSortTSP)(hBlock, hLayer, hWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+double LCAPI lcBlockGetJumpsLen (HANDLE hBlock, HANDLE hLayer, HWND hWnd)
+{
+  if (pflcBlockGetJumpsLen){
+    return (*pflcBlockGetJumpsLen)(hBlock, hLayer, hWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcLayerClear (HANDLE hLayer, HANDLE hBlock)
+{
+  if (pflcLayerClear){
+    return (*pflcLayerClear)(hLayer, hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcLayerCopyProps (HANDLE hLayer, HANDLE hFromLayer)
+{
+  if (pflcLayerCopyProps){
+    return (*pflcLayerCopyProps)(hLayer, hFromLayer);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcFillSetLine (HANDLE hFill, int iLine, double Dist, double Angle, double W)
+{
+  if (pflcFillSetLine){
+    return (*pflcFillSetLine)(hFill, iLine, Dist, Angle, W);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcMLStyleAddLine (HANDLE hStyle, double Offset, LPCWSTR szColor, HANDLE hLtype)
+{
+  if (pflcMLStyleAddLine){
+    return (*pflcMLStyleAddLine)(hStyle, Offset, szColor, hLtype);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcMLStyleDelLine (HANDLE hStyle, int iLine)
+{
+  if (pflcMLStyleDelLine){
+    return (*pflcMLStyleDelLine)(hStyle, iLine);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcMLStyleSortLines (HANDLE hStyle)
+{
+  if (pflcMLStyleSortLines){
+    return (*pflcMLStyleSortLines)(hStyle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntType (HANDLE hEnt, int Typ)
+{
+  if (pflcEntType){
+    return (*pflcEntType)(hEnt, Typ);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntErase (HANDLE hEnt, BOOL bErase)
+{
+  if (pflcEntErase){
+    return (*pflcEntErase)(hEnt, bErase);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntMove (HANDLE hEnt, double dX, double dY)
+{
+  if (pflcEntMove){
+    return (*pflcEntMove)(hEnt, dX, dY);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntAlign (HANDLE hEnt, int Alignment, double X, double Y)
+{
+  if (pflcEntAlign){
+    return (*pflcEntAlign)(hEnt, Alignment, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntScale (HANDLE hEnt, double X0, double Y0, double Scal)
+{
+  if (pflcEntScale){
+    return (*pflcEntScale)(hEnt, X0, Y0, Scal);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntRotate (HANDLE hEnt, double X0, double Y0, double Angle)
+{
+  if (pflcEntRotate){
+    return (*pflcEntRotate)(hEnt, X0, Y0, Angle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntMirror (HANDLE hEnt, double X1, double Y1, double X2, double Y2)
+{
+  if (pflcEntMirror){
+    return (*pflcEntMirror)(hEnt, X1, Y1, X2, Y2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntExplode (HANDLE hEnt, BOOL bSelect, BOOL bErase)
+{
+  if (pflcEntExplode){
+    return (*pflcEntExplode)(hEnt, bSelect, bErase);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcEntSplit (HANDLE hEnt, int nParts, BOOL bSelectNew, BOOL bDeleteEnt)
+{
+  if (pflcEntSplit){
+    return (*pflcEntSplit)(hEnt, nParts, bSelectNew, bDeleteEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcEntBreak (HANDLE hEnt, double X, double Y, double Delta, BOOL bSelectNew, BOOL bDeleteEnt)
+{
+  if (pflcEntBreak){
+    return (*pflcEntBreak)(hEnt, X, Y, Delta, bSelectNew, bDeleteEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcEntBreak2 (HANDLE hEnt, HANDLE hPtbuf, double Delta, BOOL bSelectNew, BOOL bDeleteEnt)
+{
+  if (pflcEntBreak2){
+    return (*pflcEntBreak2)(hEnt, hPtbuf, Delta, bSelectNew, bDeleteEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntOffset (HANDLE hEnt, double Dist)
+{
+  if (pflcEntOffset){
+    return (*pflcEntOffset)(hEnt, Dist);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntExtend (HANDLE hEnt, HANDLE hEntEdge, BOOL bApparent)
+{
+  if (pflcEntExtend){
+    return (*pflcEntExtend)(hEnt, hEntEdge, bApparent);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntToTop (HANDLE hEnt)
+{
+  if (pflcEntToTop){
+    return (*pflcEntToTop)(hEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntToBottom (HANDLE hEnt)
+{
+  if (pflcEntToBottom){
+    return (*pflcEntToBottom)(hEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntToAbove (HANDLE hEnt, HANDLE hEnt2)
+{
+  if (pflcEntToAbove){
+    return (*pflcEntToAbove)(hEnt, hEnt2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntToUnder (HANDLE hEnt, HANDLE hEnt2)
+{
+  if (pflcEntToUnder){
+    return (*pflcEntToUnder)(hEnt, hEnt2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntGetGrip (HANDLE hEnt, int iGrip, double* pX, double* pY)
+{
+  if (pflcEntGetGrip){
+    return (*pflcEntGetGrip)(hEnt, iGrip, pX, pY);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntPutGrip (HANDLE hEnt, int iGrip, double X, double Y)
+{
+  if (pflcEntPutGrip){
+    return (*pflcEntPutGrip)(hEnt, iGrip, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntUpdate (HANDLE hEnt)
+{
+  if (pflcEntUpdate){
+    return (*pflcEntUpdate)(hEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntCopyBase (HANDLE hEnt, HANDLE hEntFrom)
+{
+  if (pflcEntCopyBase){
+    return (*pflcEntCopyBase)(hEnt, hEntFrom);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntXData (HANDLE hEnt, int Id, int Flags, int nBytes)
+{
+  if (pflcEntXData){
+    return (*pflcEntXData)(hEnt, Id, Flags, nBytes);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntContainEnt (HANDLE hEnt, HANDLE hEnt2)
+{
+  if (pflcEntContainEnt){
+    return (*pflcEntContainEnt)(hEnt, hEnt2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntCrossEnt (HANDLE hEnt, HANDLE hEnt2)
+{
+  if (pflcEntCrossEnt){
+    return (*pflcEntCrossEnt)(hEnt, hEnt2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntReverse (HANDLE hEnt)
+{
+  if (pflcEntReverse){
+    return (*pflcEntReverse)(hEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntGetPoint (HANDLE hEnt, double Dist, double* pX, double* pY, double* pAngle)
+{
+  if (pflcEntGetPoint){
+    return (*pflcEntGetPoint)(hEnt, Dist, pX, pY, pAngle);
+  }
+  return 0;
+}
+
+
+//--------------
+double LCAPI lcEntGetDist (HANDLE hEnt, double X, double Y, double* pX2, double* pY2, double* pDist)
+{
+  if (pflcEntGetDist){
+    return (*pflcEntGetDist)(hEnt, X, Y, pX2, pY2, pDist);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcEntTransform (HANDLE hEnt, HANDLE hTransform)
+{
+  if (pflcEntTransform){
+    return (*pflcEntTransform)(hEnt, hTransform);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcIntersection (HANDLE hEnt, HANDLE hEnt2, int Apparent)
+{
+  if (pflcIntersection){
+    return (*pflcIntersection)(hEnt, hEnt2, Apparent);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcInterGetPoint (int iPoint, double* pX, double* pY)
+{
+  if (pflcInterGetPoint){
+    return (*pflcInterGetPoint)(iPoint, pX, pY);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcLineGetPoint (HANDLE hLine, int Mode, double Dist, double* pX, double* pY)
+{
+  if (pflcLineGetPoint){
+    return (*pflcLineGetPoint)(hLine, Mode, Dist, pX, pY);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPlineAddVer (HANDLE hPline, HANDLE hVer, double X, double Y)
+{
+  if (pflcPlineAddVer){
+    return (*pflcPlineAddVer)(hPline, hVer, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPlineAddVer2 (HANDLE hPline, HANDLE hVer, double X, double Y, double Param, double W0, double W1)
+{
+  if (pflcPlineAddVer2){
+    return (*pflcPlineAddVer2)(hPline, hVer, X, Y, Param, W0, W1);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPlineAddVerDir (HANDLE hPline, HANDLE hVer, double Ang, double Length)
+{
+  if (pflcPlineAddVerDir){
+    return (*pflcPlineAddVerDir)(hPline, hVer, Ang, Length);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlineEnd (HANDLE hPline)
+{
+  if (pflcPlineEnd){
+    return (*pflcPlineEnd)(hPline);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlineFromPtbuf (HANDLE hPline, HANDLE hPtbuf)
+{
+  if (pflcPlineFromPtbuf){
+    return (*pflcPlineFromPtbuf)(hPline, hPtbuf);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlineFromMpgon (HANDLE hPline, HANDLE hMpgon)
+{
+  if (pflcPlineFromMpgon){
+    return (*pflcPlineFromMpgon)(hPline, hMpgon);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlineFromFile (HANDLE hPline, LPCWSTR szFileName)
+{
+  if (pflcPlineFromFile){
+    return (*pflcPlineFromFile)(hPline, szFileName);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlineDeleteVer (HANDLE hPline, HANDLE hVer)
+{
+  if (pflcPlineDeleteVer){
+    return (*pflcPlineDeleteVer)(hPline, hVer);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcPlineDelExVers (HANDLE hPline, double Delta)
+{
+  if (pflcPlineDelExVers){
+    return (*pflcPlineDelExVers)(hPline, Delta);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPlineGetFirstVer (HANDLE hPline)
+{
+  if (pflcPlineGetFirstVer){
+    return (*pflcPlineGetFirstVer)(hPline);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPlineGetNextVer (HANDLE hPline, HANDLE hVer)
+{
+  if (pflcPlineGetNextVer){
+    return (*pflcPlineGetNextVer)(hPline, hVer);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPlineGetLastVer (HANDLE hPline)
+{
+  if (pflcPlineGetLastVer){
+    return (*pflcPlineGetLastVer)(hPline);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPlineGetPrevVer (HANDLE hPline, HANDLE hVer)
+{
+  if (pflcPlineGetPrevVer){
+    return (*pflcPlineGetPrevVer)(hPline, hVer);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPlineGetVer (HANDLE hPline, int Index)
+{
+  if (pflcPlineGetVer){
+    return (*pflcPlineGetVer)(hPline, Index);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPlineGetVerPt (HANDLE hPline, double X, double Y, double Delta)
+{
+  if (pflcPlineGetVerPt){
+    return (*pflcPlineGetVerPt)(hPline, X, Y, Delta);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPlineGetSeg (HANDLE hPline, double X, double Y, double Delta)
+{
+  if (pflcPlineGetSeg){
+    return (*pflcPlineGetSeg)(hPline, X, Y, Delta);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlineReverse (HANDLE hPline)
+{
+  if (pflcPlineReverse){
+    return (*pflcPlineReverse)(hPline);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlineSetStartVer (HANDLE hPline, HANDLE hVer)
+{
+  if (pflcPlineSetStartVer){
+    return (*pflcPlineSetStartVer)(hPline, hVer);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcPlineContainPoint (HANDLE hPline, double X, double Y)
+{
+  if (pflcPlineContainPoint){
+    return (*pflcPlineContainPoint)(hPline, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlineGetRoundPrm (HANDLE hPline, HANDLE hVer, double* pX0, double* pY0, double* pBulge, double* pX1, double* pY1)
+{
+  if (pflcPlineGetRoundPrm){
+    return (*pflcPlineGetRoundPrm)(hPline, hVer, pX0, pY0, pBulge, pX1, pY1);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlineGetPoint (HANDLE hPline, double Dist, double* pX, double* pY, double* pAngle)
+{
+  if (pflcPlineGetPoint){
+    return (*pflcPlineGetPoint)(hPline, Dist, pX, pY, pAngle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlineGetPointOpp (HANDLE hPline, double Dist, double* pX, double* pY, double* pAngle, double* pX2, double* pY2)
+{
+  if (pflcPlineGetPointOpp){
+    return (*pflcPlineGetPointOpp)(hPline, Dist, pX, pY, pAngle, pX2, pY2);
+  }
+  return 0;
+}
+
+
+//--------------
+double LCAPI lcPlineGetDist (HANDLE hPline, double X, double Y, double* pX2, double* pY2, double* pDist)
+{
+  if (pflcPlineGetDist){
+    return (*pflcPlineGetDist)(hPline, X, Y, pX2, pY2, pDist);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcPlineDivide (HANDLE hPline, int nPoints, BOOL bAngle)
+{
+  if (pflcPlineDivide){
+    return (*pflcPlineDivide)(hPline, nPoints, bAngle);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcPlineDivide2 (HANDLE hPline, double Delta, BOOL bAngle)
+{
+  if (pflcPlineDivide2){
+    return (*pflcPlineDivide2)(hPline, Delta, bAngle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGetDivPt (int iPnt, double* pX, double* pY, double* pAngle)
+{
+  if (pflcGetDivPt){
+    return (*pflcGetDivPt)(iPnt, pX, pY, pAngle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlineMakeArrow (HANDLE hPline, double Hline, double Harr)
+{
+  if (pflcPlineMakeArrow){
+    return (*pflcPlineMakeArrow)(hPline, Hline, Harr);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPlineSplitBySI (HANDLE hPline, BOOL bSelect, BOOL bErase)
+{
+  if (pflcPlineSplitBySI){
+    return (*pflcPlineSplitBySI)(hPline, bSelect, bErase);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBezierAddVer (HANDLE hBez, HANDLE hVer, double X, double Y)
+{
+  if (pflcBezierAddVer){
+    return (*pflcBezierAddVer)(hBez, hVer, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBezierEnd (HANDLE hBez)
+{
+  if (pflcBezierEnd){
+    return (*pflcBezierEnd)(hBez);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBezierSetVerPrm (HANDLE hBez, HANDLE hVer, int Side, double Leng, double Ang)
+{
+  if (pflcBezierSetVerPrm){
+    return (*pflcBezierSetVerPrm)(hBez, hVer, Side, Leng, Ang);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcMlineAddVer (HANDLE hMline, HANDLE hVer, double X, double Y)
+{
+  if (pflcMlineAddVer){
+    return (*pflcMlineAddVer)(hMline, hVer, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcMlineAddVerDir (HANDLE hMline, HANDLE hVer, double Ang, double Length)
+{
+  if (pflcMlineAddVerDir){
+    return (*pflcMlineAddVerDir)(hMline, hVer, Ang, Length);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcMlineDeleteVer (HANDLE hMline, HANDLE hVer)
+{
+  if (pflcMlineDeleteVer){
+    return (*pflcMlineDeleteVer)(hMline, hVer);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcMlineGetFirstVer (HANDLE hMline)
+{
+  if (pflcMlineGetFirstVer){
+    return (*pflcMlineGetFirstVer)(hMline);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcMlineGetNextVer (HANDLE hMline, HANDLE hVer)
+{
+  if (pflcMlineGetNextVer){
+    return (*pflcMlineGetNextVer)(hMline, hVer);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcMlineGetLastVer (HANDLE hMline)
+{
+  if (pflcMlineGetLastVer){
+    return (*pflcMlineGetLastVer)(hMline);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcMlineGetPrevVer (HANDLE hMline, HANDLE hVer)
+{
+  if (pflcMlineGetPrevVer){
+    return (*pflcMlineGetPrevVer)(hMline, hVer);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcMlineGetVer (HANDLE hMline, int Index)
+{
+  if (pflcMlineGetVer){
+    return (*pflcMlineGetVer)(hMline, Index);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcMlineGetVerPt (HANDLE hMline, double X, double Y, double Delta)
+{
+  if (pflcMlineGetVerPt){
+    return (*pflcMlineGetVerPt)(hMline, X, Y, Delta);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcMlineGetSeg (HANDLE hMline, double X, double Y, double Delta)
+{
+  if (pflcMlineGetSeg){
+    return (*pflcMlineGetSeg)(hMline, X, Y, Delta);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcMlineReverse (HANDLE hMline)
+{
+  if (pflcMlineReverse){
+    return (*pflcMlineReverse)(hMline);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcRPlanAddVer (HANDLE hRPlan, double X, double Y)
+{
+  if (pflcRPlanAddVer){
+    return (*pflcRPlanAddVer)(hRPlan, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcRPlanSetCurve (HANDLE hVer, double Radius, double LenClot1, double LenClot2)
+{
+  if (pflcRPlanSetCurve){
+    return (*pflcRPlanSetCurve)(hVer, Radius, LenClot1, LenClot2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcRPlanSetPos (HANDLE hVer, double X, double Y)
+{
+  if (pflcRPlanSetPos){
+    return (*pflcRPlanSetPos)(hVer, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcRPlanDeleteVer (HANDLE hRPlan, HANDLE hVer)
+{
+  if (pflcRPlanDeleteVer){
+    return (*pflcRPlanDeleteVer)(hRPlan, hVer);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcRPlanGetFirstVer (HANDLE hRPlan)
+{
+  if (pflcRPlanGetFirstVer){
+    return (*pflcRPlanGetFirstVer)(hRPlan);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcRPlanGetNextVer (HANDLE hRPlan, HANDLE hVer)
+{
+  if (pflcRPlanGetNextVer){
+    return (*pflcRPlanGetNextVer)(hRPlan, hVer);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcRPlanGetLastVer (HANDLE hRPlan)
+{
+  if (pflcRPlanGetLastVer){
+    return (*pflcRPlanGetLastVer)(hRPlan);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcRPlanGetPrevVer (HANDLE hRPlan, HANDLE hVer)
+{
+  if (pflcRPlanGetPrevVer){
+    return (*pflcRPlanGetPrevVer)(hRPlan, hVer);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcRPlanGetVer (HANDLE hRPlan, int Index)
+{
+  if (pflcRPlanGetVer){
+    return (*pflcRPlanGetVer)(hRPlan, Index);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcRPlanGetPoint (HANDLE hRPlan, double Dist, double* pX, double* pY, double* pAngle, int* pSide)
+{
+  if (pflcRPlanGetPoint){
+    return (*pflcRPlanGetPoint)(hRPlan, Dist, pX, pY, pAngle, pSide);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcRPlanGetDist (HANDLE hRPlan, double X, double Y, double* pX2, double* pY2, double* pDist, double* pOffset)
+{
+  if (pflcRPlanGetDist){
+    return (*pflcRPlanGetDist)(hRPlan, X, Y, pX2, pY2, pDist, pOffset);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcRPlanWriteCSV (HANDLE hRPlan, LPCWSTR szFileName)
+{
+  if (pflcRPlanWriteCSV){
+    return (*pflcRPlanWriteCSV)(hRPlan, szFileName);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcXlinePutDir (HANDLE hXline, double X, double Y)
+{
+  if (pflcXlinePutDir){
+    return (*pflcXlinePutDir)(hXline, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcRectGetPolyline (HANDLE hRect, double* pX, double* pY, double* pBulge)
+{
+  if (pflcRectGetPolyline){
+    return (*pflcRectGetPolyline)(hRect, pX, pY, pBulge);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImgRefGetPixel (HANDLE hImgRef, int iX, int iY, double* pX, double* pY, int* pColor)
+{
+  if (pflcImgRefGetPixel){
+    return (*pflcImgRefGetPixel)(hImgRef, iX, iY, pX, pY, pColor);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImgRefResize (HANDLE hImgRef, int NewWidth, int NewHeight, int Method)
+{
+  if (pflcImgRefResize){
+    return (*pflcImgRefResize)(hImgRef, NewWidth, NewHeight, Method);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcHatchSetPattern (HANDLE hHatch, LPCWSTR szFileName, LPCWSTR szPatName, double Scal, double Angle)
+{
+  if (pflcHatchSetPattern){
+    return (*pflcHatchSetPattern)(hHatch, szFileName, szPatName, Scal, Angle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcHatchBoundStart (HANDLE hHatch)
+{
+  if (pflcHatchBoundStart){
+    return (*pflcHatchBoundStart)(hHatch);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcHatchBoundPoint (HANDLE hHatch, double X, double Y)
+{
+  if (pflcHatchBoundPoint){
+    return (*pflcHatchBoundPoint)(hHatch, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcHatchBoundEntity (HANDLE hHatch, HANDLE hEnt)
+{
+  if (pflcHatchBoundEntity){
+    return (*pflcHatchBoundEntity)(hHatch, hEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcHatchBoundEndLoop (HANDLE hHatch)
+{
+  if (pflcHatchBoundEndLoop){
+    return (*pflcHatchBoundEndLoop)(hHatch);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcHatchBoundEnd (HANDLE hHatch)
+{
+  if (pflcHatchBoundEnd){
+    return (*pflcHatchBoundEnd)(hHatch);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcHatchPatStart (HANDLE hHatch)
+{
+  if (pflcHatchPatStart){
+    return (*pflcHatchPatStart)(hHatch);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcHatchPatLine (HANDLE hHatch, double Angle, double x0, double y0, double dx, double dy, int nDash, double L0, double L1, double L2, double L3, double L4, double L5, double L6, double L7)
+{
+  if (pflcHatchPatLine){
+    return (*pflcHatchPatLine)(hHatch, Angle, x0, y0, dx, dy, nDash, L0, L1, L2, L3, L4, L5, L6, L7);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcHatchPatEnd (HANDLE hHatch)
+{
+  if (pflcHatchPatEnd){
+    return (*pflcHatchPatEnd)(hHatch);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcHatchGetLoopSize (HANDLE hHatch, int iLoop)
+{
+  if (pflcHatchGetLoopSize){
+    return (*pflcHatchGetLoopSize)(hHatch, iLoop);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcHatchGetPoint (HANDLE hHatch, int iPnt, double* pX, double* pY)
+{
+  if (pflcHatchGetPoint){
+    return (*pflcHatchGetPoint)(hHatch, iPnt, pX, pY);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcHatchGetEnt (HANDLE hHatch, int Mode)
+{
+  if (pflcHatchGetEnt){
+    return (*pflcHatchGetEnt)(hHatch, Mode);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcVportSetView (HANDLE hVport, double Xcen, double Ycen, double Scal, double Angle)
+{
+  if (pflcVportSetView){
+    return (*pflcVportSetView)(hVport, Xcen, Ycen, Scal, Angle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcVportLayerDlg (HANDLE hVport, HANDLE hLcWnd)
+{
+  if (pflcVportLayerDlg){
+    return (*pflcVportLayerDlg)(hVport, hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcVportLayerCmd (HANDLE hVport, int Cmd, HANDLE hLayer)
+{
+  if (pflcVportLayerCmd){
+    return (*pflcVportLayerCmd)(hVport, Cmd, hLayer);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlkRefAddAtt (HANDLE hBlockRef, LPCWSTR szTag, LPCWSTR szValue)
+{
+  if (pflcBlkRefAddAtt){
+    return (*pflcBlkRefAddAtt)(hBlockRef, szTag, szValue);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlkRefGetFirstAtt (HANDLE hBlockRef)
+{
+  if (pflcBlkRefGetFirstAtt){
+    return (*pflcBlkRefGetFirstAtt)(hBlockRef);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlkRefGetNextAtt (HANDLE hBlockRef, HANDLE hAttrib)
+{
+  if (pflcBlkRefGetNextAtt){
+    return (*pflcBlkRefGetNextAtt)(hBlockRef, hAttrib);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcBlkRefGetAtt (HANDLE hBlockRef, LPCWSTR szTag)
+{
+  if (pflcBlkRefGetAtt){
+    return (*pflcBlkRefGetAtt)(hBlockRef, szTag);
+  }
+  return 0;
+}
+
+
+//--------------
+LPCWSTR LCAPI lcBlkRefGetAttVal (HANDLE hBlockRef, LPCWSTR szTag)
+{
+  if (pflcBlkRefGetAttVal){
+    return (*pflcBlkRefGetAttVal)(hBlockRef, szTag);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcBlkRefPutAttVal (HANDLE hBlockRef, LPCWSTR szTag, LPCWSTR szValue)
+{
+  if (pflcBlkRefPutAttVal){
+    return (*pflcBlkRefPutAttVal)(hBlockRef, szTag, szValue);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcShapeAddEnt (HANDLE hShape, HANDLE hEnt, BOOL bErase)
+{
+  if (pflcShapeAddEnt){
+    return (*pflcShapeAddEnt)(hShape, hEnt, bErase);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcShapeEnd (HANDLE hShape)
+{
+  if (pflcShapeEnd){
+    return (*pflcShapeEnd)(hShape);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcShapeGetFirstEnt (HANDLE hShape)
+{
+  if (pflcShapeGetFirstEnt){
+    return (*pflcShapeGetFirstEnt)(hShape);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcShapeGetNextEnt (HANDLE hShape, HANDLE hEnt)
+{
+  if (pflcShapeGetNextEnt){
+    return (*pflcShapeGetNextEnt)(hShape, hEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcShapeGetLastEnt (HANDLE hShape)
+{
+  if (pflcShapeGetLastEnt){
+    return (*pflcShapeGetLastEnt)(hShape);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcShapeGetPrevEnt (HANDLE hShape, HANDLE hEnt)
+{
+  if (pflcShapeGetPrevEnt){
+    return (*pflcShapeGetPrevEnt)(hShape, hEnt);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_AddPoint (HANDLE hTIN, LPCWSTR szNamePtype, double X, double Y, double Z)
+{
+  if (pflcTIN_AddPoint){
+    return (*pflcTIN_AddPoint)(hTIN, szNamePtype, X, Y, Z);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_PtypeGetByName (HANDLE hTIN, LPCWSTR szName)
+{
+  if (pflcTIN_PtypeGetByName){
+    return (*pflcTIN_PtypeGetByName)(hTIN, szName);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_PtypeGetFirst (HANDLE hTIN)
+{
+  if (pflcTIN_PtypeGetFirst){
+    return (*pflcTIN_PtypeGetFirst)(hTIN);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_PtypeGetNext (HANDLE hTIN, HANDLE hPtype)
+{
+  if (pflcTIN_PtypeGetNext){
+    return (*pflcTIN_PtypeGetNext)(hTIN, hPtype);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_PntGetFirst (HANDLE hTIN)
+{
+  if (pflcTIN_PntGetFirst){
+    return (*pflcTIN_PntGetFirst)(hTIN);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_PntGetNext (HANDLE hTIN, HANDLE hPnt)
+{
+  if (pflcTIN_PntGetNext){
+    return (*pflcTIN_PntGetNext)(hTIN, hPnt);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_PntGetNear (HANDLE hTIN, double X, double Y)
+{
+  if (pflcTIN_PntGetNear){
+    return (*pflcTIN_PntGetNear)(hTIN, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcTIN_PntDelDup (HANDLE hTIN, double Delta, HANDLE hLcWnd)
+{
+  if (pflcTIN_PntDelDup){
+    return (*pflcTIN_PntDelDup)(hTIN, Delta, hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_TriGetFirst (HANDLE hTIN)
+{
+  if (pflcTIN_TriGetFirst){
+    return (*pflcTIN_TriGetFirst)(hTIN);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_TriGetNext (HANDLE hTIN, HANDLE hTrian)
+{
+  if (pflcTIN_TriGetNext){
+    return (*pflcTIN_TriGetNext)(hTIN, hTrian);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_TriGetByPos (HANDLE hTIN, double X, double Y)
+{
+  if (pflcTIN_TriGetByPos){
+    return (*pflcTIN_TriGetByPos)(hTIN, X, Y);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcTIN_TriGetEdge (HANDLE hTIN, HANDLE hTrian, int iEdge)
+{
+  if (pflcTIN_TriGetEdge){
+    return (*pflcTIN_TriGetEdge)(hTIN, hTrian, iEdge);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcTIN_TriUpdate (HANDLE hTIN, HANDLE hPnt)
+{
+  if (pflcTIN_TriUpdate){
+    return (*pflcTIN_TriUpdate)(hTIN, hPnt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcTIN_Bnd (HANDLE hTIN, double MaxDist, HANDLE hLcWnd)
+{
+  if (pflcTIN_Bnd){
+    return (*pflcTIN_Bnd)(hTIN, MaxDist, hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_BndGetPoint (HANDLE hTIN, int iPnt)
+{
+  if (pflcTIN_BndGetPoint){
+    return (*pflcTIN_BndGetPoint)(hTIN, iPnt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcTIN_Triangulate (HANDLE hTIN, HANDLE hLcWnd)
+{
+  if (pflcTIN_Triangulate){
+    return (*pflcTIN_Triangulate)(hTIN, hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcTIN_Isolines (HANDLE hTIN, double Zstep, int BoldStep, HANDLE hLcWnd)
+{
+  if (pflcTIN_Isolines){
+    return (*pflcTIN_Isolines)(hTIN, Zstep, BoldStep, hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_IsoGetFirst (HANDLE hTIN)
+{
+  if (pflcTIN_IsoGetFirst){
+    return (*pflcTIN_IsoGetFirst)(hTIN);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_IsoGetNext (HANDLE hTIN, HANDLE hIso)
+{
+  if (pflcTIN_IsoGetNext){
+    return (*pflcTIN_IsoGetNext)(hTIN, hIso);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcTIN_IsoMakeLabels (HANDLE hIso)
+{
+  if (pflcTIN_IsoMakeLabels){
+    return (*pflcTIN_IsoMakeLabels)(hIso);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcTIN_GetIsoLabel (int iLabel, double* pX, double* pY, double* pAngle, int* pAlign)
+{
+  if (pflcTIN_GetIsoLabel){
+    return (*pflcTIN_GetIsoLabel)(iLabel, pX, pY, pAngle, pAlign);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcTIN_GetZ (HANDLE hTIN, double X, double Y, double* pZ)
+{
+  if (pflcTIN_GetZ){
+    return (*pflcTIN_GetZ)(hTIN, X, Y, pZ);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcTIN_ColorFill (HANDLE hTIN, double Zstep, double PixelSize, HANDLE hLcWnd)
+{
+  if (pflcTIN_ColorFill){
+    return (*pflcTIN_ColorFill)(hTIN, Zstep, PixelSize, hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcTIN_Save (HANDLE hTIN, LPCWSTR szFileName, int Mode, BOOL bByBndr, HANDLE hLcWnd)
+{
+  if (pflcTIN_Save){
+    return (*pflcTIN_Save)(hTIN, szFileName, Mode, bByBndr, hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcTIN_InterLine (HANDLE hTIN, double X0, double Y0, double X1, double Y1)
+{
+  if (pflcTIN_InterLine){
+    return (*pflcTIN_InterLine)(hTIN, X0, Y0, X1, Y1);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcTIN_InterGetPoint (HANDLE hTIN, int iPnt, double* pX, double* pY, double* pZ)
+{
+  if (pflcTIN_InterGetPoint){
+    return (*pflcTIN_InterGetPoint)(hTIN, iPnt, pX, pY, pZ);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcTIN_Clear (HANDLE hTIN)
+{
+  if (pflcTIN_Clear){
+    return (*pflcTIN_Clear)(hTIN);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcTIN_AddTrian (HANDLE hTIN, int iPnt0, int iPnt1, int iPnt2)
+{
+  if (pflcTIN_AddTrian){
+    return (*pflcTIN_AddTrian)(hTIN, iPnt0, iPnt1, iPnt2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcTIN_BndAddPnt (HANDLE hTIN, int iPnt)
+{
+  if (pflcTIN_BndAddPnt){
+    return (*pflcTIN_BndAddPnt)(hTIN, iPnt);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcTIN_Merge (HANDLE hTIN, LPCWSTR szFileName, HANDLE hLcWnd)
+{
+  if (pflcTIN_Merge){
+    return (*pflcTIN_Merge)(hTIN, szFileName, hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcColorRGB (int Red, int Green, int Blue)
+{
+  if (pflcColorRGB){
+    return (*pflcColorRGB)(Red, Green, Blue);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcColorIsRGB (LPCWSTR szColor)
+{
+  if (pflcColorIsRGB){
+    return (*pflcColorIsRGB)(szColor);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcColorGetRed (LPCWSTR szColor)
+{
+  if (pflcColorGetRed){
+    return (*pflcColorGetRed)(szColor);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcColorGetGreen (LPCWSTR szColor)
+{
+  if (pflcColorGetGreen){
+    return (*pflcColorGetGreen)(szColor);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcColorGetBlue (LPCWSTR szColor)
+{
+  if (pflcColorGetBlue){
+    return (*pflcColorGetBlue)(szColor);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcColorGetIndex (LPCWSTR szColor, BOOL bLogicalEnabled)
+{
+  if (pflcColorGetIndex){
+    return (*pflcColorGetIndex)(szColor, bLogicalEnabled);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcColorToVal (LPCWSTR szColor, int* pbRGB, int* pIndex, int* pR, int* pG, int* pB)
+{
+  if (pflcColorToVal){
+    return (*pflcColorToVal)(szColor, pbRGB, pIndex, pR, pG, pB);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcColorSetPalette (int Index, int R, int G, int B)
+{
+  if (pflcColorSetPalette){
+    return (*pflcColorSetPalette)(Index, R, G, B);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcColorGetPalette (int Index, int* pR, int* pG, int* pB)
+{
+  if (pflcColorGetPalette){
+    return (*pflcColorGetPalette)(Index, pR, pG, pB);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcColorSavePalette (LPCWSTR szFileName, HANDLE hWnd)
+{
+  if (pflcColorSavePalette){
+    return (*pflcColorSavePalette)(szFileName, hWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcColorLoadPalette (LPCWSTR szFileName, HANDLE hWnd)
+{
+  if (pflcColorLoadPalette){
+    return (*pflcColorLoadPalette)(szFileName, hWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImageSetPixelRGB (HANDLE hImage, int X, int Y, int Red, int Green, int Blue)
+{
+  if (pflcImageSetPixelRGB){
+    return (*pflcImageSetPixelRGB)(hImage, X, Y, Red, Green, Blue);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImageSetPixelI (HANDLE hImage, int X, int Y, int iColor)
+{
+  if (pflcImageSetPixelI){
+    return (*pflcImageSetPixelI)(hImage, X, Y, iColor);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImageGetPixelRGB (HANDLE hImage, int X, int Y, int* pRed, int* pGreen, int* pBlue)
+{
+  if (pflcImageGetPixelRGB){
+    return (*pflcImageGetPixelRGB)(hImage, X, Y, pRed, pGreen, pBlue);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImageGetPixelI (HANDLE hImage, int X, int Y, int* piColor)
+{
+  if (pflcImageGetPixelI){
+    return (*pflcImageGetPixelI)(hImage, X, Y, piColor);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImageSetPalColor (HANDLE hImage, int iColor, int Red, int Green, int Blue)
+{
+  if (pflcImageSetPalColor){
+    return (*pflcImageSetPalColor)(hImage, iColor, Red, Green, Blue);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImageGetPalColor (HANDLE hImage, int iColor, int* pRed, int* pGreen, int* pBlue)
+{
+  if (pflcImageGetPalColor){
+    return (*pflcImageGetPalColor)(hImage, iColor, pRed, pGreen, pBlue);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImageLoad (HANDLE hImage, LPCWSTR szFilename, HANDLE hWnd)
+{
+  if (pflcImageLoad){
+    return (*pflcImageLoad)(hImage, szFilename, hWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImageLoadDIB (HANDLE hImage, HANDLE hDib2)
+{
+  if (pflcImageLoadDIB){
+    return (*pflcImageLoadDIB)(hImage, hDib2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImageLoadCamera (HANDLE hImage)
+{
+  if (pflcImageLoadCamera){
+    return (*pflcImageLoadCamera)(hImage);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImageCopyQuad (HANDLE hImage, HANDLE hImageSrc, UINT W, UINT H, double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3)
+{
+  if (pflcImageCopyQuad){
+    return (*pflcImageCopyQuad)(hImage, hImageSrc, W, H, x0, y0, x1, y1, x2, y2, x3, y3);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcImageProc (HANDLE hImage, int Mode)
+{
+  if (pflcImageProc){
+    return (*pflcImageProc)(hImage, Mode);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcExpEntity (HANDLE hEnt, int iChar, int Flags, BOOL bUnrotate)
+{
+  if (pflcExpEntity){
+    return (*pflcExpEntity)(hEnt, iChar, Flags, bUnrotate);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcExpGetPline (double Delta)
+{
+  if (pflcExpGetPline){
+    return (*pflcExpGetPline)(Delta);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcExpGetVertex (double* pX, double* pY)
+{
+  if (pflcExpGetVertex){
+    return (*pflcExpGetVertex)(pX, pY);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcExpBlock (HANDLE hBlock, F_LCEVENT pFunc, int Prm1, HANDLE Prm2)
+{
+  if (pflcExpBlock){
+    return (*pflcExpBlock)(hBlock, pFunc, Prm1, Prm2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGbrLoad (HANDLE hLcWnd, LPCWSTR szFileName0)
+{
+  if (pflcGbrLoad){
+    return (*pflcGbrLoad)(hLcWnd, szFileName0);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGbrClose (HANDLE hLcWnd)
+{
+  if (pflcGbrClose){
+    return (*pflcGbrClose)(hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+LPCWSTR LCAPI lcPlugGetOption (LPCWSTR szFileName, LPCWSTR szKey)
+{
+  if (pflcPlugGetOption){
+    return (*pflcPlugGetOption)(szFileName, szKey);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlugGetOption2 (LPCWSTR szFileName, LPCWSTR szKey)
+{
+  if (pflcPlugGetOption2){
+    return (*pflcPlugGetOption2)(szFileName, szKey);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPlugSetOption (LPCWSTR szFileName, LPCWSTR szKey, LPCWSTR szValue, BOOL bSave)
+{
+  if (pflcPlugSetOption){
+    return (*pflcPlugSetOption)(szFileName, szKey, szValue, bSave);
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcPrintSetup (HANDLE hWnd)
+{
+  if (pflcPrintSetup){
+    return (*pflcPrintSetup)(hWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPrintLayout (HANDLE hBlock)
+{
+  if (pflcPrintLayout){
+    return (*pflcPrintLayout)(hBlock);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPrintBlock (HANDLE hBlock, double X, double Y, double W, double H, double Scal, double PapLef, double PapTop, int Options)
+{
+  if (pflcPrintBlock){
+    return (*pflcPrintBlock)(hBlock, X, Y, W, H, Scal, PapLef, PapTop, Options);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcXDataBegin ()
+{
+  if (pflcXDataBegin){
+    return (*pflcXDataBegin)();
+  }
+  return 0;
+}
+
+
+//--------------
+int LCAPI lcXDataEnd (HANDLE hData)
+{
+  if (pflcXDataEnd){
+    return (*pflcXDataEnd)(hData);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcXDataClear (HANDLE hData)
+{
+  if (pflcXDataClear){
+    return (*pflcXDataClear)(hData);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcXDataSet (HANDLE hData)
+{
+  if (pflcXDataSet){
+    return (*pflcXDataSet)(hData);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndTabClear (HANDLE hLcWnd)
+{
+  if (pflcWndTabClear){
+    return (*pflcWndTabClear)(hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndTabAdd (HANDLE hLcWnd, int TabID, LPCWSTR szLabel, LPCWSTR szTipText, HANDLE hObject)
+{
+  if (pflcWndTabAdd){
+    return (*pflcWndTabAdd)(hLcWnd, TabID, szLabel, szTipText, hObject);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndTabSelect (HANDLE hLcWnd, int TabID)
+{
+  if (pflcWndTabSelect){
+    return (*pflcWndTabSelect)(hLcWnd, TabID);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndPaperEnable (HANDLE hLcWnd, BOOL bEnable)
+{
+  if (pflcWndPaperEnable){
+    return (*pflcWndPaperEnable)(hLcWnd, bEnable);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndPaperSetSize (HANDLE hLcWnd, int Size, int Orient)
+{
+  if (pflcWndPaperSetSize){
+    return (*pflcWndPaperSetSize)(hLcWnd, Size, Orient);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndPaperSetSize2 (HANDLE hLcWnd, double Width, double Height)
+{
+  if (pflcWndPaperSetSize2){
+    return (*pflcWndPaperSetSize2)(hLcWnd, Width, Height);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcWndPaperSetPos (HANDLE hLcWnd, double Left, double Bottom)
+{
+  if (pflcWndPaperSetPos){
+    return (*pflcWndPaperSetPos)(hLcWnd, Left, Bottom);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGripClear (HANDLE hLcWnd)
+{
+  if (pflcGripClear){
+    return (*pflcGripClear)(hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGripAdd (HANDLE hLcWnd, HANDLE hObj, int iGrip, int Typ, double X, double Y, double Ang, double X0, double Y0)
+{
+  if (pflcGripAdd){
+    return (*pflcGripAdd)(hLcWnd, hObj, iGrip, Typ, X, Y, Ang, X0, Y0);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcGripSet (HANDLE hLcWnd, HANDLE hObj, int iGrip, double X, double Y, double Ang, double X0, double Y0)
+{
+  if (pflcGripSet){
+    return (*pflcGripSet)(hLcWnd, hObj, iGrip, X, Y, Ang, X0, Y0);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPaint_PenCreate (HANDLE hLcWnd, int Id, COLORREF Color, double Width, int PenStyle)
+{
+  if (pflcPaint_PenCreate){
+    return (*pflcPaint_PenCreate)(hLcWnd, Id, Color, Width, PenStyle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_PenSelect (HANDLE hLcWnd, HANDLE hPen)
+{
+  if (pflcPaint_PenSelect){
+    return (*pflcPaint_PenSelect)(hLcWnd, hPen);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_PenSelectID (HANDLE hLcWnd, int IdPen)
+{
+  if (pflcPaint_PenSelectID){
+    return (*pflcPaint_PenSelectID)(hLcWnd, IdPen);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPaint_BrushCreate (HANDLE hLcWnd, int Id, COLORREF Color, int Pattern, int Alpha)
+{
+  if (pflcPaint_BrushCreate){
+    return (*pflcPaint_BrushCreate)(hLcWnd, Id, Color, Pattern, Alpha);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_BrushSelect (HANDLE hLcWnd, HANDLE hBrush)
+{
+  if (pflcPaint_BrushSelect){
+    return (*pflcPaint_BrushSelect)(hLcWnd, hBrush);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_BrushSelectID (HANDLE hLcWnd, int IdBrush)
+{
+  if (pflcPaint_BrushSelectID){
+    return (*pflcPaint_BrushSelectID)(hLcWnd, IdBrush);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawPtbuf (HANDLE hLcWnd, HANDLE hPtbuf, BOOL bClosed)
+{
+  if (pflcPaint_DrawPtbuf){
+    return (*pflcPaint_DrawPtbuf)(hLcWnd, hPtbuf, bClosed);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawMpgon (HANDLE hLcWnd, HANDLE hMpgon, BOOL bFill, BOOL bBorder)
+{
+  if (pflcPaint_DrawMpgon){
+    return (*pflcPaint_DrawMpgon)(hLcWnd, hMpgon, bFill, bBorder);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawImage (HANDLE hLcWnd, HANDLE hImage, double X, double Y, double PixelSize, int Transp, int TVal, HANDLE hPtbuf)
+{
+  if (pflcPaint_DrawImage){
+    return (*pflcPaint_DrawImage)(hLcWnd, hImage, X, Y, PixelSize, Transp, TVal, hPtbuf);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawImage2 (HANDLE hLcWnd, HANDLE hImage, double X, double Y, double W, double H, int Transp, int TVal, HANDLE hPtbuf)
+{
+  if (pflcPaint_DrawImage2){
+    return (*pflcPaint_DrawImage2)(hLcWnd, hImage, X, Y, W, H, Transp, TVal, hPtbuf);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawText (HANDLE hLcWnd, double X, double Y, LPCWSTR szText)
+{
+  if (pflcPaint_DrawText){
+    return (*pflcPaint_DrawText)(hLcWnd, X, Y, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawText2 (HANDLE hLcWnd, double X1, double Y1, double X2, double Y2, int Align, LPCWSTR szText)
+{
+  if (pflcPaint_DrawText2){
+    return (*pflcPaint_DrawText2)(hLcWnd, X1, Y1, X2, Y2, Align, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawTextBC (HANDLE hLcWnd, HANDLE hMpgon, double Gap, double Height, int Align, LPCWSTR szText)
+{
+  if (pflcPaint_DrawTextBC){
+    return (*pflcPaint_DrawTextBC)(hLcWnd, hMpgon, Gap, Height, Align, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawArcText (HANDLE hLcWnd, LPCWSTR szText, double X, double Y, double Rad, double Ang0, BOOL bCW, double H, double WScale, int Align)
+{
+  if (pflcPaint_DrawArcText){
+    return (*pflcPaint_DrawArcText)(hLcWnd, szText, X, Y, Rad, Ang0, bCW, H, WScale, Align);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawHatch (HANDLE hLcWnd, HANDLE hHatch)
+{
+  if (pflcPaint_DrawHatch){
+    return (*pflcPaint_DrawHatch)(hLcWnd, hHatch);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawPoint (HANDLE hLcWnd, double X, double Y, int PtMode, double PtSize)
+{
+  if (pflcPaint_DrawPoint){
+    return (*pflcPaint_DrawPoint)(hLcWnd, X, Y, PtMode, PtSize);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawLine (HANDLE hLcWnd, double X1, double Y1, double X2, double Y2)
+{
+  if (pflcPaint_DrawLine){
+    return (*pflcPaint_DrawLine)(hLcWnd, X1, Y1, X2, Y2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawXline (HANDLE hLcWnd, double X, double Y, double Angle, BOOL bRay)
+{
+  if (pflcPaint_DrawXline){
+    return (*pflcPaint_DrawXline)(hLcWnd, X, Y, Angle, bRay);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawRect (HANDLE hLcWnd, double Xc, double Yc, double Width, double Height)
+{
+  if (pflcPaint_DrawRect){
+    return (*pflcPaint_DrawRect)(hLcWnd, Xc, Yc, Width, Height);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawRect2 (HANDLE hLcWnd, double X1, double Y1, double X2, double Y2)
+{
+  if (pflcPaint_DrawRect2){
+    return (*pflcPaint_DrawRect2)(hLcWnd, X1, Y1, X2, Y2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawPickBox (HANDLE hLcWnd)
+{
+  if (pflcPaint_DrawPickBox){
+    return (*pflcPaint_DrawPickBox)(hLcWnd);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawGrid (HANDLE hLcWnd, HANDLE hGrid, BOOL bDest, COLORREF ColLine, COLORREF ColNode)
+{
+  if (pflcPaint_DrawGrid){
+    return (*pflcPaint_DrawGrid)(hLcWnd, hGrid, bDest, ColLine, ColNode);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DrawCPrompt (HANDLE hLcWnd, int X, int Y, int Align, LPCWSTR szText)
+{
+  if (pflcPaint_DrawCPrompt){
+    return (*pflcPaint_DrawCPrompt)(hLcWnd, X, Y, Align, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+void LCAPI lcPaint_SetPixel (HANDLE hDC, int X, int Y, COLORREF Color)
+{
+  if (pflcPaint_SetPixel){
+    (*pflcPaint_SetPixel)(hDC, X, Y, Color);
   }
 }
 
 
 //--------------
-void LCAPI lcEventsEnable (BOOL bEnable)
+HANDLE LCAPI lcPaint_CreatePtbuf ()
 {
-  tflcEventsEnable pflcEventsEnable;
-  pflcEventsEnable = (tflcEventsEnable)GetProcAddress( ghLibInst, "lcEventsEnable" );
-  if (pflcEventsEnable){
-    (*pflcEventsEnable)(bEnable);
+  if (pflcPaint_CreatePtbuf){
+    return (*pflcPaint_CreatePtbuf)();
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventMouseMove (F_MOUSEMOVE pFunc)
+BOOL LCAPI lcPaint_DeletePtbuf (HANDLE hPtbuf)
 {
-  tflcOnEventMouseMove pflcOnEventMouseMove;
-  pflcOnEventMouseMove = (tflcOnEventMouseMove)GetProcAddress( ghLibInst, "lcOnEventMouseMove" );
-  if (pflcOnEventMouseMove){
-    (*pflcOnEventMouseMove)(pFunc);
+  if (pflcPaint_DeletePtbuf){
+    return (*pflcPaint_DeletePtbuf)(hPtbuf);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventMouseDown (F_MOUSEDOWN pFunc)
+BOOL LCAPI lcPaint_PtbufClear (HANDLE hPtbuf)
 {
-  tflcOnEventMouseDown pflcOnEventMouseDown;
-  pflcOnEventMouseDown = (tflcOnEventMouseDown)GetProcAddress( ghLibInst, "lcOnEventMouseDown" );
-  if (pflcOnEventMouseDown){
-    (*pflcOnEventMouseDown)(pFunc);
+  if (pflcPaint_PtbufClear){
+    return (*pflcPaint_PtbufClear)(hPtbuf);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventMouseUp (F_MOUSEUP pFunc)
+BOOL LCAPI lcPaint_PtbufAddPoint (HANDLE hPtbuf, double X, double Y, double Prm1, double Prm2, int IntPrm)
 {
-  tflcOnEventMouseUp pflcOnEventMouseUp;
-  pflcOnEventMouseUp = (tflcOnEventMouseUp)GetProcAddress( ghLibInst, "lcOnEventMouseUp" );
-  if (pflcOnEventMouseUp){
-    (*pflcOnEventMouseUp)(pFunc);
+  if (pflcPaint_PtbufAddPoint){
+    return (*pflcPaint_PtbufAddPoint)(hPtbuf, X, Y, Prm1, Prm2, IntPrm);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventMouseDblClk (F_MOUSEDBLCLK pFunc)
+BOOL LCAPI lcPaint_PtbufAddPoint2 (HANDLE hPtbuf, double X, double Y)
 {
-  tflcOnEventMouseDblClk pflcOnEventMouseDblClk;
-  pflcOnEventMouseDblClk = (tflcOnEventMouseDblClk)GetProcAddress( ghLibInst, "lcOnEventMouseDblClk" );
-  if (pflcOnEventMouseDblClk){
-    (*pflcOnEventMouseDblClk)(pFunc);
+  if (pflcPaint_PtbufAddPoint2){
+    return (*pflcPaint_PtbufAddPoint2)(hPtbuf, X, Y);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventMouseSnap (F_MOUSESNAP pFunc)
+BOOL LCAPI lcPaint_PtbufAddPointP (HANDLE hPtbuf, double Angle, double Dist)
 {
-  tflcOnEventMouseSnap pflcOnEventMouseSnap;
-  pflcOnEventMouseSnap = (tflcOnEventMouseSnap)GetProcAddress( ghLibInst, "lcOnEventMouseSnap" );
-  if (pflcOnEventMouseSnap){
-    (*pflcOnEventMouseSnap)(pFunc);
+  if (pflcPaint_PtbufAddPointP){
+    return (*pflcPaint_PtbufAddPointP)(hPtbuf, Angle, Dist);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventMouseLeave (F_MOUSELEAVE pFunc)
+BOOL LCAPI lcPaint_PtbufAddLine (HANDLE hPtbuf, double X1, double Y1, double X2, double Y2)
 {
-  tflcOnEventMouseLeave pflcOnEventMouseLeave;
-  pflcOnEventMouseLeave = (tflcOnEventMouseLeave)GetProcAddress( ghLibInst, "lcOnEventMouseLeave" );
-  if (pflcOnEventMouseLeave){
-    (*pflcOnEventMouseLeave)(pFunc);
+  if (pflcPaint_PtbufAddLine){
+    return (*pflcPaint_PtbufAddLine)(hPtbuf, X1, Y1, X2, Y2);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventMouseWheel (F_MOUSEWHEEL pFunc)
+BOOL LCAPI lcPaint_PtbufAddLineP (HANDLE hPtbuf, double X, double Y, double Angle, double Dist)
 {
-  tflcOnEventMouseWheel pflcOnEventMouseWheel;
-  pflcOnEventMouseWheel = (tflcOnEventMouseWheel)GetProcAddress( ghLibInst, "lcOnEventMouseWheel" );
-  if (pflcOnEventMouseWheel){
-    (*pflcOnEventMouseWheel)(pFunc);
+  if (pflcPaint_PtbufAddLineP){
+    return (*pflcPaint_PtbufAddLineP)(hPtbuf, X, Y, Angle, Dist);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventKeyDown (F_KEYDOWN pFunc)
+BOOL LCAPI lcPaint_PtbufAddCircle (HANDLE hPtbuf, double Xc, double Yc, double R, int Resol)
 {
-  tflcOnEventKeyDown pflcOnEventKeyDown;
-  pflcOnEventKeyDown = (tflcOnEventKeyDown)GetProcAddress( ghLibInst, "lcOnEventKeyDown" );
-  if (pflcOnEventKeyDown){
-    (*pflcOnEventKeyDown)(pFunc);
+  if (pflcPaint_PtbufAddCircle){
+    return (*pflcPaint_PtbufAddCircle)(hPtbuf, Xc, Yc, R, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventPaint (F_PAINT pFunc)
+BOOL LCAPI lcPaint_PtbufAddCircle2 (HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, int Resol)
 {
-  tflcOnEventPaint pflcOnEventPaint;
-  pflcOnEventPaint = (tflcOnEventPaint)GetProcAddress( ghLibInst, "lcOnEventPaint" );
-  if (pflcOnEventPaint){
-    (*pflcOnEventPaint)(pFunc);
+  if (pflcPaint_PtbufAddCircle2){
+    return (*pflcPaint_PtbufAddCircle2)(hPtbuf, X1, Y1, X2, Y2, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventZoom (F_ZOOM pFunc)
+BOOL LCAPI lcPaint_PtbufAddCircle3 (HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, double X3, double Y3, BOOL bInside, int Resol)
 {
-  tflcOnEventZoom pflcOnEventZoom;
-  pflcOnEventZoom = (tflcOnEventZoom)GetProcAddress( ghLibInst, "lcOnEventZoom" );
-  if (pflcOnEventZoom){
-    (*pflcOnEventZoom)(pFunc);
+  if (pflcPaint_PtbufAddCircle3){
+    return (*pflcPaint_PtbufAddCircle3)(hPtbuf, X1, Y1, X2, Y2, X3, Y3, bInside, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventSelectView (F_SELECTVIEW pFunc)
+BOOL LCAPI lcPaint_PtbufAddArc (HANDLE hPtbuf, double Xc, double Yc, double R, double StartAngle, double ArcAngle, int Resol)
 {
-  tflcOnEventSelectView pflcOnEventSelectView;
-  pflcOnEventSelectView = (tflcOnEventSelectView)GetProcAddress( ghLibInst, "lcOnEventSelectView" );
-  if (pflcOnEventSelectView){
-    (*pflcOnEventSelectView)(pFunc);
+  if (pflcPaint_PtbufAddArc){
+    return (*pflcPaint_PtbufAddArc)(hPtbuf, Xc, Yc, R, StartAngle, ArcAngle, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventGetPoint (F_GETPOINT pFunc)
+BOOL LCAPI lcPaint_PtbufAddArc3p (HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, double X3, double Y3, int Resol)
 {
-  tflcOnEventGetPoint pflcOnEventGetPoint;
-  pflcOnEventGetPoint = (tflcOnEventGetPoint)GetProcAddress( ghLibInst, "lcOnEventGetPoint" );
-  if (pflcOnEventGetPoint){
-    (*pflcOnEventGetPoint)(pFunc);
+  if (pflcPaint_PtbufAddArc3p){
+    return (*pflcPaint_PtbufAddArc3p)(hPtbuf, X1, Y1, X2, Y2, X3, Y3, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventAddCommand (F_ADDCOMMAND pFunc)
+BOOL LCAPI lcPaint_PtbufAddArcSDE (HANDLE hPtbuf, double Xs, double Ys, double DirAng, double Xe, double Ye, int Resol)
 {
-  tflcOnEventAddCommand pflcOnEventAddCommand;
-  pflcOnEventAddCommand = (tflcOnEventAddCommand)GetProcAddress( ghLibInst, "lcOnEventAddCommand" );
-  if (pflcOnEventAddCommand){
-    (*pflcOnEventAddCommand)(pFunc);
+  if (pflcPaint_PtbufAddArcSDE){
+    return (*pflcPaint_PtbufAddArcSDE)(hPtbuf, Xs, Ys, DirAng, Xe, Ye, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventCmdStart (F_CMD_START pFunc)
+BOOL LCAPI lcPaint_PtbufAddArcSDAR (HANDLE hPtbuf, double Xs, double Ys, double DirAng, double AngArc, double R, int Resol)
 {
-  tflcOnEventCmdStart pflcOnEventCmdStart;
-  pflcOnEventCmdStart = (tflcOnEventCmdStart)GetProcAddress( ghLibInst, "lcOnEventCmdStart" );
-  if (pflcOnEventCmdStart){
-    (*pflcOnEventCmdStart)(pFunc);
+  if (pflcPaint_PtbufAddArcSDAR){
+    return (*pflcPaint_PtbufAddArcSDAR)(hPtbuf, Xs, Ys, DirAng, AngArc, R, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventCmdFinish (F_CMD_FINISH pFunc)
+BOOL LCAPI lcPaint_PtbufAddArcSER (HANDLE hPtbuf, double Xs, double Ys, double Xe, double Ye, double Radius, BOOL bClockwise, int Resol)
 {
-  tflcOnEventCmdFinish pflcOnEventCmdFinish;
-  pflcOnEventCmdFinish = (tflcOnEventCmdFinish)GetProcAddress( ghLibInst, "lcOnEventCmdFinish" );
-  if (pflcOnEventCmdFinish){
-    (*pflcOnEventCmdFinish)(pFunc);
+  if (pflcPaint_PtbufAddArcSER){
+    return (*pflcPaint_PtbufAddArcSER)(hPtbuf, Xs, Ys, Xe, Ye, Radius, bClockwise, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventCmdMouseDown (F_CMD_MOUSEDOWN pFunc)
+BOOL LCAPI lcPaint_PtbufAddArcSEL (HANDLE hPtbuf, double Xs, double Ys, double Xe, double Ye, double ArcLen, BOOL bClockwise, int Resol)
 {
-  tflcOnEventCmdMouseDown pflcOnEventCmdMouseDown;
-  pflcOnEventCmdMouseDown = (tflcOnEventCmdMouseDown)GetProcAddress( ghLibInst, "lcOnEventCmdMouseDown" );
-  if (pflcOnEventCmdMouseDown){
-    (*pflcOnEventCmdMouseDown)(pFunc);
+  if (pflcPaint_PtbufAddArcSEL){
+    return (*pflcPaint_PtbufAddArcSEL)(hPtbuf, Xs, Ys, Xe, Ye, ArcLen, bClockwise, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventCmdMouseUp (F_CMD_MOUSEUP pFunc)
+BOOL LCAPI lcPaint_PtbufAddArcSEA (HANDLE hPtbuf, double Xs, double Ys, double Xe, double Ye, double AngArc, int Resol)
 {
-  tflcOnEventCmdMouseUp pflcOnEventCmdMouseUp;
-  pflcOnEventCmdMouseUp = (tflcOnEventCmdMouseUp)GetProcAddress( ghLibInst, "lcOnEventCmdMouseUp" );
-  if (pflcOnEventCmdMouseUp){
-    (*pflcOnEventCmdMouseUp)(pFunc);
+  if (pflcPaint_PtbufAddArcSEA){
+    return (*pflcPaint_PtbufAddArcSEA)(hPtbuf, Xs, Ys, Xe, Ye, AngArc, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventCmdMouseMove (F_CMD_MOUSEMOVE pFunc)
+BOOL LCAPI lcPaint_PtbufAddArcSEB (HANDLE hPtbuf, double Xs, double Ys, double Xe, double Ye, double Bulge, int Resol)
 {
-  tflcOnEventCmdMouseMove pflcOnEventCmdMouseMove;
-  pflcOnEventCmdMouseMove = (tflcOnEventCmdMouseMove)GetProcAddress( ghLibInst, "lcOnEventCmdMouseMove" );
-  if (pflcOnEventCmdMouseMove){
-    (*pflcOnEventCmdMouseMove)(pFunc);
+  if (pflcPaint_PtbufAddArcSEB){
+    return (*pflcPaint_PtbufAddArcSEB)(hPtbuf, Xs, Ys, Xe, Ye, Bulge, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventCmdString (F_CMD_STRING pFunc)
+BOOL LCAPI lcPaint_PtbufAddArcCSE (HANDLE hPtbuf, double Xc, double Yc, double Xs, double Ys, double Xe, double Ye, BOOL bClockwise, int Resol)
 {
-  tflcOnEventCmdString pflcOnEventCmdString;
-  pflcOnEventCmdString = (tflcOnEventCmdString)GetProcAddress( ghLibInst, "lcOnEventCmdString" );
-  if (pflcOnEventCmdString){
-    (*pflcOnEventCmdString)(pFunc);
+  if (pflcPaint_PtbufAddArcCSE){
+    return (*pflcPaint_PtbufAddArcCSE)(hPtbuf, Xc, Yc, Xs, Ys, Xe, Ye, bClockwise, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventAddEntity (F_ADDENTITY pFunc)
+BOOL LCAPI lcPaint_PtbufAddArcCSA (HANDLE hPtbuf, double Xc, double Yc, double Xs, double Ys, double AngArc, int Resol)
 {
-  tflcOnEventAddEntity pflcOnEventAddEntity;
-  pflcOnEventAddEntity = (tflcOnEventAddEntity)GetProcAddress( ghLibInst, "lcOnEventAddEntity" );
-  if (pflcOnEventAddEntity){
-    (*pflcOnEventAddEntity)(pFunc);
+  if (pflcPaint_PtbufAddArcCSA){
+    return (*pflcPaint_PtbufAddArcCSA)(hPtbuf, Xc, Yc, Xs, Ys, AngArc, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventRegen (F_REGEN pFunc)
+BOOL LCAPI lcPaint_PtbufAddArcCSL (HANDLE hPtbuf, double Xc, double Yc, double Xs, double Ys, double ChordLen, BOOL bClockwise, int Resol)
 {
-  tflcOnEventRegen pflcOnEventRegen;
-  pflcOnEventRegen = (tflcOnEventRegen)GetProcAddress( ghLibInst, "lcOnEventRegen" );
-  if (pflcOnEventRegen){
-    (*pflcOnEventRegen)(pFunc);
+  if (pflcPaint_PtbufAddArcCSL){
+    return (*pflcPaint_PtbufAddArcCSL)(hPtbuf, Xc, Yc, Xs, Ys, ChordLen, bClockwise, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventFioProgress (F_FIOPROGRESS pFunc)
+BOOL LCAPI lcPaint_PtbufAddArcCRAA (HANDLE hPtbuf, double Xc, double Yc, double R, double AngStart, double AngEnd, BOOL bClockwise, int Resol)
 {
-  tflcOnEventFioProgress pflcOnEventFioProgress;
-  pflcOnEventFioProgress = (tflcOnEventFioProgress)GetProcAddress( ghLibInst, "lcOnEventFioProgress" );
-  if (pflcOnEventFioProgress){
-    (*pflcOnEventFioProgress)(pFunc);
+  if (pflcPaint_PtbufAddArcCRAA){
+    return (*pflcPaint_PtbufAddArcCRAA)(hPtbuf, Xc, Yc, R, AngStart, AngEnd, bClockwise, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventSelection (F_SELECTION pFunc)
+BOOL LCAPI lcPaint_PtbufAddEllipse (HANDLE hPtbuf, double Xc, double Yc, double Rmaj, double Rmin, double RotAng, double StartAng, double ArcAng, int Resol)
 {
-  tflcOnEventSelection pflcOnEventSelection;
-  pflcOnEventSelection = (tflcOnEventSelection)GetProcAddress( ghLibInst, "lcOnEventSelection" );
-  if (pflcOnEventSelection){
-    (*pflcOnEventSelection)(pFunc);
+  if (pflcPaint_PtbufAddEllipse){
+    return (*pflcPaint_PtbufAddEllipse)(hPtbuf, Xc, Yc, Rmaj, Rmin, RotAng, StartAng, ArcAng, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventPropChanged (F_PROPCHANGED pFunc)
+BOOL LCAPI lcPaint_PtbufAddEllipse2 (HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, int Resol)
 {
-  tflcOnEventPropChanged pflcOnEventPropChanged;
-  pflcOnEventPropChanged = (tflcOnEventPropChanged)GetProcAddress( ghLibInst, "lcOnEventPropChanged" );
-  if (pflcOnEventPropChanged){
-    (*pflcOnEventPropChanged)(pFunc);
+  if (pflcPaint_PtbufAddEllipse2){
+    return (*pflcPaint_PtbufAddEllipse2)(hPtbuf, X1, Y1, X2, Y2, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventGripSelect (F_GRIPSELECT pFunc)
+BOOL LCAPI lcPaint_PtbufAddRect (HANDLE hPtbuf, double Xc, double Yc, double W, double H, double Angle, double R, int Resol)
 {
-  tflcOnEventGripSelect pflcOnEventGripSelect;
-  pflcOnEventGripSelect = (tflcOnEventGripSelect)GetProcAddress( ghLibInst, "lcOnEventGripSelect" );
-  if (pflcOnEventGripSelect){
-    (*pflcOnEventGripSelect)(pFunc);
+  if (pflcPaint_PtbufAddRect){
+    return (*pflcPaint_PtbufAddRect)(hPtbuf, Xc, Yc, W, H, Angle, R, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventGripMove (F_GRIPMOVE pFunc)
+BOOL LCAPI lcPaint_PtbufAddRect2 (HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, double R, int Resol)
 {
-  tflcOnEventGripMove pflcOnEventGripMove;
-  pflcOnEventGripMove = (tflcOnEventGripMove)GetProcAddress( ghLibInst, "lcOnEventGripMove" );
-  if (pflcOnEventGripMove){
-    (*pflcOnEventGripMove)(pFunc);
+  if (pflcPaint_PtbufAddRect2){
+    return (*pflcPaint_PtbufAddRect2)(hPtbuf, X1, Y1, X2, Y2, R, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventEntErase (F_ENTERASE pFunc)
+BOOL LCAPI lcPaint_PtbufAddRect3 (HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, double W, int Align, double R, int Resol)
 {
-  tflcOnEventEntErase pflcOnEventEntErase;
-  pflcOnEventEntErase = (tflcOnEventEntErase)GetProcAddress( ghLibInst, "lcOnEventEntErase" );
-  if (pflcOnEventEntErase){
-    (*pflcOnEventEntErase)(pFunc);
+  if (pflcPaint_PtbufAddRect3){
+    return (*pflcPaint_PtbufAddRect3)(hPtbuf, X1, Y1, X2, Y2, W, Align, R, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventEntMove (F_ENTMOVE pFunc)
+BOOL LCAPI lcPaint_PtbufAddWline (HANDLE hPtbuf, double X1, double Y1, double X2, double Y2, double W, int Align, BOOL bArc, int Resol)
 {
-  tflcOnEventEntMove pflcOnEventEntMove;
-  pflcOnEventEntMove = (tflcOnEventEntMove)GetProcAddress( ghLibInst, "lcOnEventEntMove" );
-  if (pflcOnEventEntMove){
-    (*pflcOnEventEntMove)(pFunc);
+  if (pflcPaint_PtbufAddWline){
+    return (*pflcPaint_PtbufAddWline)(hPtbuf, X1, Y1, X2, Y2, W, Align, bArc, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventEntRotate (F_ENTROTATE pFunc)
+BOOL LCAPI lcPaint_PtbufAddPtbuf (HANDLE hPtbuf, HANDLE hPtbuf2)
 {
-  tflcOnEventEntRotate pflcOnEventEntRotate;
-  pflcOnEventEntRotate = (tflcOnEventEntRotate)GetProcAddress( ghLibInst, "lcOnEventEntRotate" );
-  if (pflcOnEventEntRotate){
-    (*pflcOnEventEntRotate)(pFunc);
+  if (pflcPaint_PtbufAddPtbuf){
+    return (*pflcPaint_PtbufAddPtbuf)(hPtbuf, hPtbuf2);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventEntScale (F_ENTSCALE pFunc)
+BOOL LCAPI lcPaint_PtbufGetPoint (HANDLE hPtbuf, int Mode, double* pX, double* pY)
 {
-  tflcOnEventEntScale pflcOnEventEntScale;
-  pflcOnEventEntScale = (tflcOnEventEntScale)GetProcAddress( ghLibInst, "lcOnEventEntScale" );
-  if (pflcOnEventEntScale){
-    (*pflcOnEventEntScale)(pFunc);
+  if (pflcPaint_PtbufGetPoint){
+    return (*pflcPaint_PtbufGetPoint)(hPtbuf, Mode, pX, pY);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventEntMirror (F_ENTMIRROR pFunc)
+BOOL LCAPI lcPaint_PtbufGetPoint2 (HANDLE hPtbuf, int Mode, double* pX, double* pY, double* pPrm1, double* pPrm2, int* pIntPrm)
 {
-  tflcOnEventEntMirror pflcOnEventEntMirror;
-  pflcOnEventEntMirror = (tflcOnEventEntMirror)GetProcAddress( ghLibInst, "lcOnEventEntMirror" );
-  if (pflcOnEventEntMirror){
-    (*pflcOnEventEntMirror)(pFunc);
+  if (pflcPaint_PtbufGetPoint2){
+    return (*pflcPaint_PtbufGetPoint2)(hPtbuf, Mode, pX, pY, pPrm1, pPrm2, pIntPrm);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventEntProp (F_ENTPROP pFunc)
+BOOL LCAPI lcPaint_PtbufInterpolate (HANDLE hPtbuf, BOOL bClosed, HANDLE hPtbufDest, int Mode, int Resol)
 {
-  tflcOnEventEntProp pflcOnEventEntProp;
-  pflcOnEventEntProp = (tflcOnEventEntProp)GetProcAddress( ghLibInst, "lcOnEventEntProp" );
-  if (pflcOnEventEntProp){
-    (*pflcOnEventEntProp)(pFunc);
+  if (pflcPaint_PtbufInterpolate){
+    return (*pflcPaint_PtbufInterpolate)(hPtbuf, bClosed, hPtbufDest, Mode, Resol);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventHelp (F_HELP pFunc)
+BOOL LCAPI lcPaint_PtbufMove (HANDLE hPtbuf, double dx, double dy)
 {
-  tflcOnEventHelp pflcOnEventHelp;
-  pflcOnEventHelp = (tflcOnEventHelp)GetProcAddress( ghLibInst, "lcOnEventHelp" );
-  if (pflcOnEventHelp){
-    (*pflcOnEventHelp)(pFunc);
+  if (pflcPaint_PtbufMove){
+    return (*pflcPaint_PtbufMove)(hPtbuf, dx, dy);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventAddStr (F_ADDSTR pFunc)
+BOOL LCAPI lcPaint_PtbufRotate (HANDLE hPtbuf, double Xc, double Yc, double Angle)
 {
-  tflcOnEventAddStr pflcOnEventAddStr;
-  pflcOnEventAddStr = (tflcOnEventAddStr)GetProcAddress( ghLibInst, "lcOnEventAddStr" );
-  if (pflcOnEventAddStr){
-    (*pflcOnEventAddStr)(pFunc);
+  if (pflcPaint_PtbufRotate){
+    return (*pflcPaint_PtbufRotate)(hPtbuf, Xc, Yc, Angle);
   }
+  return 0;
 }
 
 
 //--------------
-void LCAPI lcOnEventFontReplace (F_FONTREPLACE pFunc)
+BOOL LCAPI lcPaint_PtbufScale (HANDLE hPtbuf, double Xc, double Yc, double ScaleX, double ScaleY)
 {
-  tflcOnEventFontReplace pflcOnEventFontReplace;
-  pflcOnEventFontReplace = (tflcOnEventFontReplace)GetProcAddress( ghLibInst, "lcOnEventFontReplace" );
-  if (pflcOnEventFontReplace){
-    (*pflcOnEventFontReplace)(pFunc);
+  if (pflcPaint_PtbufScale){
+    return (*pflcPaint_PtbufScale)(hPtbuf, Xc, Yc, ScaleX, ScaleY);
   }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_PtbufMirror (HANDLE hPtbuf, double X1, double Y1, double X2, double Y2)
+{
+  if (pflcPaint_PtbufMirror){
+    return (*pflcPaint_PtbufMirror)(hPtbuf, X1, Y1, X2, Y2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_PtbufCopy (HANDLE hPtbuf, HANDLE hPtbufDest)
+{
+  if (pflcPaint_PtbufCopy){
+    return (*pflcPaint_PtbufCopy)(hPtbuf, hPtbufDest);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPaint_CreateMpgon ()
+{
+  if (pflcPaint_CreateMpgon){
+    return (*pflcPaint_CreateMpgon)();
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_DeleteMpgon (HANDLE hMpgon)
+{
+  if (pflcPaint_DeleteMpgon){
+    return (*pflcPaint_DeleteMpgon)(hMpgon);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_MpgonClear (HANDLE hMpgon)
+{
+  if (pflcPaint_MpgonClear){
+    return (*pflcPaint_MpgonClear)(hMpgon);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_MpgonAddPgon (HANDLE hMpgon, HANDLE hPtbuf)
+{
+  if (pflcPaint_MpgonAddPgon){
+    return (*pflcPaint_MpgonAddPgon)(hMpgon, hPtbuf);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_MpgonAddText (HANDLE hMpgon, HANDLE hFont, double X, double Y, LPCWSTR szText, int Resol)
+{
+  if (pflcPaint_MpgonAddText){
+    return (*pflcPaint_MpgonAddText)(hMpgon, hFont, X, Y, szText, Resol);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_MpgonAddBarcode (HANDLE hMpgon, int BarType, double Xc, double Yc, double Width, double Height, LPCWSTR szText)
+{
+  if (pflcPaint_MpgonAddBarcode){
+    return (*pflcPaint_MpgonAddBarcode)(hMpgon, BarType, Xc, Yc, Width, Height, szText);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_MpgonMove (HANDLE hMpgon, double dx, double dy)
+{
+  if (pflcPaint_MpgonMove){
+    return (*pflcPaint_MpgonMove)(hMpgon, dx, dy);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_MpgonRotate (HANDLE hMpgon, double Xc, double Yc, double Angle)
+{
+  if (pflcPaint_MpgonRotate){
+    return (*pflcPaint_MpgonRotate)(hMpgon, Xc, Yc, Angle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_MpgonScale (HANDLE hMpgon, double Xc, double Yc, double ScaleX, double ScaleY)
+{
+  if (pflcPaint_MpgonScale){
+    return (*pflcPaint_MpgonScale)(hMpgon, Xc, Yc, ScaleX, ScaleY);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_MpgonMirror (HANDLE hMpgon, double X1, double Y1, double X2, double Y2)
+{
+  if (pflcPaint_MpgonMirror){
+    return (*pflcPaint_MpgonMirror)(hMpgon, X1, Y1, X2, Y2);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_MpgonCopy (HANDLE hMpgon, HANDLE hMpgonDest)
+{
+  if (pflcPaint_MpgonCopy){
+    return (*pflcPaint_MpgonCopy)(hMpgon, hMpgonDest);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_HatchGen (HANDLE hMpgon, HANDLE hHatch, double Dist, double Angle, double Gap)
+{
+  if (pflcPaint_HatchGen){
+    return (*pflcPaint_HatchGen)(hMpgon, hHatch, Dist, Angle, Gap);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPaint_ImageAdd (int Id)
+{
+  if (pflcPaint_ImageAdd){
+    return (*pflcPaint_ImageAdd)(Id);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_ImageDelete (HANDLE hImage)
+{
+  if (pflcPaint_ImageDelete){
+    return (*pflcPaint_ImageDelete)(hImage);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPaint_ImageGetFirst ()
+{
+  if (pflcPaint_ImageGetFirst){
+    return (*pflcPaint_ImageGetFirst)();
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPaint_ImageGetNext (HANDLE hImage)
+{
+  if (pflcPaint_ImageGetNext){
+    return (*pflcPaint_ImageGetNext)(hImage);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPaint_ImageGetByID (int Id)
+{
+  if (pflcPaint_ImageGetByID){
+    return (*pflcPaint_ImageGetByID)(Id);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_ImageLoad (HANDLE hImage, LPCWSTR szFileName)
+{
+  if (pflcPaint_ImageLoad){
+    return (*pflcPaint_ImageLoad)(hImage, szFileName);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_ImageCopy (HANDLE hImage, HANDLE hImageDest)
+{
+  if (pflcPaint_ImageCopy){
+    return (*pflcPaint_ImageCopy)(hImage, hImageDest);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_ImageCreate (HANDLE hImage, int Width, int Height)
+{
+  if (pflcPaint_ImageCreate){
+    return (*pflcPaint_ImageCreate)(hImage, Width, Height);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_ImageSetPixel (HANDLE hImage, int X, int Y, int R, int G, int B)
+{
+  if (pflcPaint_ImageSetPixel){
+    return (*pflcPaint_ImageSetPixel)(hImage, X, Y, R, G, B);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_ImageFlip (HANDLE hImage, BOOL bHor, BOOL bVert)
+{
+  if (pflcPaint_ImageFlip){
+    return (*pflcPaint_ImageFlip)(hImage, bHor, bVert);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_ImageRotate (HANDLE hImage, double Angle)
+{
+  if (pflcPaint_ImageRotate){
+    return (*pflcPaint_ImageRotate)(hImage, Angle);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_ImageGray (HANDLE hImage)
+{
+  if (pflcPaint_ImageGray){
+    return (*pflcPaint_ImageGray)(hImage);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_ImageResize (HANDLE hImage, int NewWidth, int NewHeight, int ResizeFilter)
+{
+  if (pflcPaint_ImageResize){
+    return (*pflcPaint_ImageResize)(hImage, NewWidth, NewHeight, ResizeFilter);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPaint_ImageGetPtbuf (HANDLE hImage, double RotAngle)
+{
+  if (pflcPaint_ImageGetPtbuf){
+    return (*pflcPaint_ImageGetPtbuf)(hImage, RotAngle);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPaint_FontOpenLC (LPCWSTR szFontName)
+{
+  if (pflcPaint_FontOpenLC){
+    return (*pflcPaint_FontOpenLC)(szFontName);
+  }
+  return 0;
+}
+
+
+//--------------
+HANDLE LCAPI lcPaint_FontOpenTT (LPCWSTR szFontName, BOOL bBold, BOOL bItalic)
+{
+  if (pflcPaint_FontOpenTT){
+    return (*pflcPaint_FontOpenTT)(szFontName, bBold, bItalic);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_FontClose (HANDLE hFont)
+{
+  if (pflcPaint_FontClose){
+    return (*pflcPaint_FontClose)(hFont);
+  }
+  return 0;
+}
+
+
+//--------------
+BOOL LCAPI lcPaint_FontSelect (HANDLE hLcWnd, HANDLE hFont)
+{
+  if (pflcPaint_FontSelect){
+    return (*pflcPaint_FontSelect)(hLcWnd, hFont);
+  }
+  return 0;
 }
 
